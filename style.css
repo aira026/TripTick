@@ -466,51 +466,6 @@ body.pcopen{overflow:hidden}
   padding:20px 16px 30px
 }
 
-/* 頂部導覽列 */
-.top-nav{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:12px 16px
-}
-.icon-btn{
-  background:none;
-  border:none;
-  font-size:1.2rem;
-  cursor:pointer;
-  color:var(--ink)
-}
-.brand-title{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:2px
-}
-.brand-title h1{
-  font-size:1.7rem;
-  font-weight:700;
-  color:var(--ink);
-  margin:0
-}
-.brand-title span{
-  font-size:.75rem;
-  color:var(--mut);
-  letter-spacing:.1em;
-  text-transform:uppercase
-}
-.avatar{
-  width:36px;
-  height:36px;
-  border-radius:50%;
-  background:#FF7A00;
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:600;
-  font-size:1rem
-}
-
 /* 標題與日期區塊 */
 .trip-info-header{
   display:flex;
@@ -532,17 +487,36 @@ body.pcopen{overflow:hidden}
   margin:0;
   line-height:1.5
 }
+.trip-info-header .current-time{
+  font-size:.8rem;
+  color:var(--mut);
+  margin-top:2px
+}
 
-/* 核心時間軸卡片（上下分層，絕對不左右並排） */
-.main-now-card{
+/* 預覽行程按鈕 */
+.preview-btn{
+  width:100%;
+  max-width:260px;
+  min-height:44px;
+  margin:0 auto 16px auto;
+  display:block;
+  border:1px solid rgba(17,17,17,.12);
+  border-radius:12px;
+  background:#fff;
+  color:#111;
+  font-size:.9rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:all .15s
+}
+.preview-btn:active{transform:scale(.96);border-color:#FF7A00;color:#FF7A00}
+.preview-btn.on{border-color:#FF7A00;color:#FF7A00;background:#FFF6EE}
+
+/* 現在／下一步資訊區（無白色框，直接置於背景上） */
+.now-next-info{
   display:flex;
   flex-direction:column;
   gap:14px;
-  padding:20px;
-  background:#FFFFFF;
-  border-radius:20px;
-  box-shadow:0 20px 40px rgba(0,0,0,.06);
-  border:1px solid rgba(17,17,17,.06);
   margin-bottom:24px
 }
 .now-section{
