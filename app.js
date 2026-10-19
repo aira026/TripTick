@@ -93,7 +93,7 @@ function calc(){const v=parseFloat($("#jpy")?.value)||0,r=parseFloat($("#rate")?
 function renderNow(t){const ids=["now","tix","storm","yen","pack"],emp=emptyNow();
  const f={now:t=>bar(1)+nowCard(t),tix:t=>bar()+tixHTML(t),storm:t=>bar()+stormHTML(t),yen:t=>bar()+yenHTML(t),pack:t=>bar()+packHTML(t)};ids.forEach(i=>{$("#t-"+i).innerHTML=t?f[i](t):emp});calc();if(t){MiniMap.render("nowmap",ptsOf(t),pickPt);try{buildFood(t)}catch(e){}}}
 
-/* 當前行程：旅行當下專用頁（依草圖重構） */
+/* 當前行程：旅行當下專用頁（依圖片設計） */
 function renderCurrent(t){
   const emp='<div class="cur-empty"><div class="cur-dot">◆</div><h2>當前行程</h2><p>尚未有進行中的旅程。</p><div class="cur-pills"><button class="pill" data-a="add" data-v="now">＋ 新增行程</button><button class="pill gl" data-a="join">輸入邀請碼</button></div></div>';
   if(!t){$("#t-current").innerHTML=emp;return;}
@@ -109,9 +109,15 @@ function renderCurrent(t){
         <p class="cur-date-text">${esc(t.startDate||"日期未定")}${t.endDate?" – "+esc(t.endDate.slice(5)):""}・${nd(t)} 天${(t.members||[]).length>1?"・"+t.members.length+" 人共編":""}</p>
       </div>
       <div class="cur-now-next-card">
-        <div class="cur-now"><span class="cur-label">現在</span><span class="cur-now-text">${nowTxt}</span></div>
-        <div class="cur-divider">•</div>
-        <div class="cur-next"><span class="cur-label">下一步</span><span class="cur-next-text">${nextTxt}</span>${next?`<a class="cur-nav-btn" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener"><i class="ic ic-nav"></i></a>`:""}</div>
+        <div class="cur-side cur-now">
+          <span class="cur-label">現在</span>
+          <span class="cur-now-text">${nowTxt}</span>
+        </div>
+        <div class="cur-side cur-next">
+          <span class="cur-label">下一步</span>
+          <span class="cur-next-text">${nextTxt}</span>
+          ${next?`<a class="cur-nav-btn" data-a="nav" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener"><i class="ic ic-nav"></i></a>`:""}
+        </div>
       </div>
       <div class="cur-station-nav">
         <button class="cur-station-btn" data-a="lvprev"><i class="ic ic-nav-left"></i></button>
@@ -416,6 +422,7 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="tplreset"&&t){if(TPL&&confirm("將每日行程與地圖標點重設為最新範例？你在每日行程上的修改會被覆蓋。"))patch(t,{days:TPL.days,spots:TPL.spots}).then(()=>{refreshDays(T0());toast("已重設為最新範例")});return}
  if(a==="fixold"&&t){const c=cfg(t);modal(`<h3>整理舊帳目</h3><p class="meta">這些名稱不是目前的成員。請選擇每個名稱要歸給哪位成員，套用後帳本與結算會自動更新。</p><div class="fm">${c.orphans.map(o=>`<label>${esc(lbl(t,o))}<select class="fi" data-orph="${esc(o)}"><option value="">（暫不處理）</option>${c.members.map(m=>`<option value="${esc(m)}">${esc(nameOf(t,m))}</option>`).join("")}</select></label>`).join("")}<div class="pills"><button class="pill" data-a="fixapply">套用</button></div></div>`);return}
  if(a==="fixapply"&&t){const map={};document.querySelectorAll("[data-orph]").forEach(x=>{if(x.value)map[x.dataset.orph]=x.value});const L=exList(t).map(e=>({...e,paidBy:map[e.paidBy]||e.paidBy,splitWith:[...new Set((e.splitWith||[]).map(k=>map[k]||k))]}));saveEx(t,L);$("#modal").classList.remove("on");$("#t-yen").innerHTML=bar()+yenHTML(t);calc();toast("已整理舊帳目");return}
+ if(a==="nav"){return}
  if(a==="m"&&v==="diet"){openFood(T0());return}
  if(a==="flang"){FLANG=v;store("tp-flang",v);renderFood();return}
  if(a==="cpfood"){const X=((FOOD&&FOOD.cards[FLANG])||[]).map(l=>l.p).join("\n");X?copy(X,"已複製文案"):toast("沒有可複製的文案");return}

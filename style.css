@@ -203,7 +203,7 @@ details p{white-space:pre-wrap}
 .ic-print{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2'/%3E%3Crect x='6' y='14' width='12' height='8'/%3E%3C/svg%3E")}
 .ic-nav{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11l19-9-9 19-2-8z'/%3E%3C/svg%3E")}
 .ic-nav-left{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 12H4M12 18l-4-4-4 4'/%3E%3C/svg%3E")}
-.ic-nav-center{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v18M3 12h18'/%3E%3C/svg%3E")}
+.ic-nav-center{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2a10 10 0 1 0 10 10a10 10 0 0 0-10-10zM12 6v6l4-2'/%3E%3C/svg%3E")}
 .ic-nav-right{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12h20M12 6l4 4-4 4'/%3E%3C/svg%3E")}
 .ic-utensils{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 5h2l2 11H5l-2-11zm15-1h-2l-2 11h2l2-11z'/%3E%3C/svg%3E")}
 .ic-shield{--m:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/%3E%3C/svg%3E")}
@@ -485,6 +485,7 @@ body.pcopen{overflow:hidden}
 .cur-now-next-card{
   display:flex;
   align-items:center;
+  justify-content:space-between;
   gap:14px;
   padding:20px;
   background:#fff;
@@ -493,16 +494,17 @@ body.pcopen{overflow:hidden}
   box-shadow:0 20px 40px rgba(0,0,0,.06);
   margin-bottom:24px
 }
-.cur-now{
+.cur-side{
   display:flex;
   flex-direction:column;
   gap:2px
 }
+.cur-now{
+  flex:1
+}
 .cur-next{
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-  margin-left:auto
+  flex:1;
+  align-items:flex-end
 }
 .cur-label{
   font-size:.72rem;
@@ -512,38 +514,35 @@ body.pcopen{overflow:hidden}
   color:var(--mut)
 }
 .cur-now-text{
-  font-size:1.35rem;
+  font-size:1.5rem;
   font-weight:700;
   color:var(--ink);
-  line-height:1.4
+  line-height:1.4;
+  word-break:break-all
 }
 .cur-next-text{
-  font-size:1.05rem;
+  font-size:1.1rem;
   color:var(--tx);
-  line-height:1.5
-}
-.cur-divider{
-  width:1px;
-  height:28px;
-  background:rgba(17,17,17,.12);
-  margin:0 6px
+  line-height:1.5;
+  word-break:break-all
 }
 .cur-nav-btn{
   display:flex;
   align-items:center;
   justify-content:center;
-  width:44px;
-  height:44px;
+  width:46px;
+  height:46px;
   border-radius:50%;
   border:1px solid rgba(17,17,17,.12);
   background:#fff;
   color:currentColor;
   text-decoration:none;
   cursor:pointer;
-  transition:all .15s
+  transition:all .15s;
+  margin-top:6px
 }
 .cur-nav-btn:active{transform:scale(.92);background:rgba(17,17,17,.04)}
-.cur-nav-btn .ic{width:18px;height:18px;margin:0}
+.cur-nav-btn .ic{width:20px;height:20px;margin:0}
 .cur-station-nav{
   display:flex;
   justify-content:center;
