@@ -95,29 +95,38 @@ function renderNow(t){const ids=["now","tix","storm","yen","pack"],emp=emptyNow(
 
 /* 當前行程：旅行當下專用頁 */
 function renderCurrent(t){
-  const emp='<div class="triptick-live-home"><section class="trip-info-header"><h2>尚無行程</h2><p>請新增行程以查看當下資訊。</p></section><div class="now-next-info"><div class="now-section"><span class="label">現在</span><div class="event-name">尚無行程</div></div><div class="card-divider"></div><div class="next-section"><div class="next-info"><span class="label">下一步</span><div class="event-time-name">今日行程已結束</div></div></div></div><button class="preview-btn" data-a="lvnext">預覽行程</button><div class="pagination-row"><button class="page-btn" data-a="lvprev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="page-btn active" data-a="lvauto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10a10 10 0 0 0-10-10zM12 6v6l4-2"/></svg></button><button class="page-btn" data-a="lvnext"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div><div class="bottom-shortcuts-row"><a href="#" class="shortcut-card" data-a="m" data-v="diet"><span class="shortcut-text">飲食卡</span></a><a href="#" class="shortcut-card" data-a="m" data-v="sos"><span class="shortcut-text">緊急</span></a><a href="#" class="shortcut-card" data-a="goyen"><span class="shortcut-text">記帳</span></a></div></div>';
+  const prevSvg='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>';
+  const nextSvg='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+  const autoSvg='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>';
+  const pagRow='<div class="pagination-row"><button class="page-btn pg-prev" data-a="lvprev" aria-label="上一個">'+prevSvg+'</button><button class="page-btn pg-auto active" data-a="lvauto" aria-label="回到即時">'+autoSvg+'</button><button class="page-btn pg-next" data-a="lvnext" aria-label="下一個">'+nextSvg+'</button></div>';
+  const shortRow='<div class="bottom-shortcuts-row"><a href="#" class="shortcut-card" data-a="m" data-v="diet"><span class="shortcut-text">飲食卡</span></a><a href="#" class="shortcut-card" data-a="m" data-v="sos"><span class="shortcut-text">緊急</span></a><a href="#" class="shortcut-card" data-a="goyen"><span class="shortcut-text">記帳</span></a></div>';
+  const emp='<div class="triptick-live-home"><section class="trip-info-header"><h2>尚無行程</h2><p>請新增行程以查看當下資訊。</p></section><div class="now-next-info"><div class="now-section"><div class="day-badge">D0</div><span class="label">現在</span><div class="event-name">尚無行程</div></div><div class="card-divider"></div><div class="next-section"><div class="next-info"><span class="label">下一步</span><div class="event-time-name">今日行程已結束</div></div></div></div>'+pagRow+shortRow+'</div>';
   if(!t){$("#t-current").innerHTML=emp;return;}
   const c=liveCalc(t);
   if(!c){$("#t-current").innerHTML=emp;return;}
   const now=c.now,next=c.next;
   const nowTxt=now?esc((now.t?now.t+"　":"")+now.h):"尚無行程";
-  const nextTxt=next?esc((next.t?next.t+"　":"")+next.h):"今日行程已結束";
+  let nextTxt;
+  if(next)nextTxt=esc((next.t?next.t+"　":"")+next.h);
+  else if(c.off&&!c.before)nextTxt="旅程已結束";
+  else if(c.before)nextTxt="尚無行程";
+  else nextTxt="結束當天行程";
   const dest=next?(next.lat!=null?`${next.lat},${next.lng}`:encodeURIComponent((next.q||next.h)+(t.country?" "+t.country:""))):"";
   const dateLabel=esc(t.startDate||"日期未定")+(t.endDate?" – "+esc(t.endDate.slice(5)):"")+"・"+nd(t)+" 天"+((t.members||[]).length>1?"・"+t.members.length+" 人共編":"");
-  const nowTime=new Date().toLocaleTimeString("zh-TW",{hour:"2-digit",minute:"2-digit"});
-  const sim=LIVE.sim;
-  const previewBtn=sim
-    ? `<button class="preview-btn on" data-a="lvauto">回到即時</button>`
-    : `<button class="preview-btn" data-a="lvnext">預覽行程</button>`;
+  const nowD=new Date();
+  const dateStr=`${nowD.getFullYear()}/${String(nowD.getMonth()+1).padStart(2,"0")}/${String(nowD.getDate()).padStart(2,"0")}`;
+  const nowTime=nowD.toLocaleTimeString("zh-TW",{hour:"2-digit",minute:"2-digit"});
+  const dayNum=c.before?0:c.d+1;
   $("#t-current").innerHTML=`
     <div class="triptick-live-home">
       <section class="trip-info-header">
-        <h2>${esc(t.title)}</h2>
+        <h2><a href="#" class="trip-title-link" data-a="gotnow">${esc(t.title)}</a></h2>
         <p>${dateLabel}</p>
-        <div class="current-time">${sim?"預覽模式":"現在時間 "+nowTime}</div>
+        <div class="current-time">現在時間 ${nowTime} ・ ${dateStr}</div>
       </section>
       <div class="now-next-info">
         <div class="now-section">
+          <div class="day-badge">D${dayNum}</div>
           <span class="label">現在</span>
           <div class="event-name">${nowTxt}</div>
         </div>
@@ -127,20 +136,11 @@ function renderCurrent(t){
             <span class="label">下一步</span>
             <div class="event-time-name">${nextTxt}</div>
           </div>
-          ${next?`<a class="nav-circle-btn" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg></a>`:""}
+          ${next?`<a class="nav-circle-btn" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener" aria-label="導航至下一站"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg></a>`:""}
         </div>
       </div>
-      ${previewBtn}
-      <div class="pagination-row">
-        <button class="page-btn" data-a="lvprev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-        <button class="page-btn active" data-a="lvauto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10a10 10 0 0 0-10-10zM12 6v6l4-2"/></svg></button>
-        <button class="page-btn" data-a="lvnext"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
-      </div>
-      <div class="bottom-shortcuts-row">
-        <a href="#" class="shortcut-card" data-a="m" data-v="diet"><span class="shortcut-text">飲食卡</span></a>
-        <a href="#" class="shortcut-card" data-a="m" data-v="sos"><span class="shortcut-text">緊急</span></a>
-        <a href="#" class="shortcut-card" data-a="goyen"><span class="shortcut-text">記帳</span></a>
-      </div>
+      ${pagRow}
+      ${shortRow}
     </div>
   `;
 }
@@ -408,6 +408,7 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="deli"&&t){e.preventDefault();const P=plist(t);if(!P[b.dataset.k]||!P[b.dataset.k][+b.dataset.i])return;P[b.dataset.k].splice(+b.dataset.i,1);savePl(t,P);$("#t-pack").innerHTML=bar()+packHTML(t);return}
 
  if(a==="home"){e.preventDefault();go("current");return}
+ if(a==="gotnow"){e.preventDefault();go("now");return}
  if(a==="archive"&&t){if(confirm(`將「${t.title}」結束並歸檔到歷史旅程？`)){setSt(t,"past").then(()=>{go("past");toast("已歸檔")})}return}
  if(a==="setcur"){const n=visible().find(x=>x.id===v),o=visible().filter(x=>x.status==="now"&&x.id!==v);if(n&&confirm(`將「${n.title}」${n.status==="past"?"重新":""}設為當前行程？${o.length?"\n原本的當前旅程會自動歸檔到歷史旅程。":""}`)){Promise.all([...o.map(x=>setSt(x,"past")),setSt(n,"now")]).then(()=>{go("now");toast("已設為當前行程")})}return}
  if(a==="addbk"&&t){const i=$("#in-bk"),x=i.value.trim();if(!x)return;const L=bkList(t);L.push({n:x,c:"",u:""});saveBk(t,L);$("#t-tix").innerHTML=bar()+tixHTML(t);return}
@@ -618,7 +619,7 @@ function liveHTML(t){const c=liveCalc(t);if(!c)return'<div class="lvh"><span cla
  dest=next?(next.lat!=null?`${next.lat},${next.lng}`:encodeURIComponent((next.q||next.h)+(t.country?" "+t.country:""))):"";
  return`<div class="lvh"><span class="ldot ${LIVE.sim?"sim":"on"}"></span><b>${LIVE.sim?"預覽模式":"現在 / 下一步"}</b><span class="meta">${esc(day.k)}${day.date?" "+esc(day.date):""}</span></div>
  <div class="lvrow"><small>現在</small><b>${now?esc((now.t?now.t+"　":"")+now.h):"尚未開始"}</b></div>
- <div class="lvrow nx"><small>下一步</small><b>${next?esc((next.t?next.t+"　":"")+next.h):"今日行程已完成"}</b>${st?`<span class="lvst">${st}</span>`:""}</div>
+ <div class="lvrow nx"><small>下一步</small><b>${next?esc((next.t?next.t+"　":"")+next.h):"結束當天行程"}</b>${st?`<span class="lvst">${st}</span>`:""}</div>
  ${next?`<a class="pill lvnav" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener"><i class="ic ic-nav"></i>導航至下一站</a>`:""}
  <div class="lvctl"><button data-a="lvprev">上一個</button><button data-a="lvnext">下一個</button><button data-a="lvauto" ${LIVE.sim?"":"disabled"}>回到即時</button></div>`}
 function refreshLive(){const el=$("#live"),t=T0();if(el&&t)el.innerHTML=liveHTML(t);if(t)renderCurrent(t)}
