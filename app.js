@@ -93,7 +93,7 @@ function calc(){const v=parseFloat($("#jpy")?.value)||0,r=parseFloat($("#rate")?
 function renderNow(t){const ids=["now","tix","storm","yen","pack"],emp=emptyNow();
  const f={now:t=>bar(1)+nowCard(t),tix:t=>bar()+tixHTML(t),storm:t=>bar()+stormHTML(t),yen:t=>bar()+yenHTML(t),pack:t=>bar()+packHTML(t)};ids.forEach(i=>{$("#t-"+i).innerHTML=t?f[i](t):emp});calc();if(t){MiniMap.render("nowmap",ptsOf(t),pickPt);try{buildFood(t)}catch(e){}}}
 
-/* 當前行程：旅行當下專用頁（依圖片設計） */
+/* 當前行程：旅行當下專用頁（嚴格依指定 DOM 結構） */
 function renderCurrent(t){
   const emp='<div class="cur-empty"><div class="cur-dot">◆</div><h2>當前行程</h2><p>尚未有進行中的旅程。</p><div class="cur-pills"><button class="pill" data-a="add" data-v="now">＋ 新增行程</button><button class="pill gl" data-a="join">輸入邀請碼</button></div></div>';
   if(!t){$("#t-current").innerHTML=emp;return;}
@@ -104,30 +104,33 @@ function renderCurrent(t){
   const dest=next?(next.lat!=null?`${next.lat},${next.lng}`:encodeURIComponent((next.q||next.h)+(t.country?" "+t.country:""))):"";
   $("#t-current").innerHTML=`
     <div class="cur-page">
-      <div class="cur-title">
-        <h1 class="cur-title-text">${esc(t.title)}</h1>
-        <p class="cur-date-text">${esc(t.startDate||"日期未定")}${t.endDate?" – "+esc(t.endDate.slice(5)):""}・${nd(t)} 天${(t.members||[]).length>1?"・"+t.members.length+" 人共編":""}</p>
+      <div class="trip-title-box">
+        <h1 class="trip-title">${esc(t.title)}</h1>
+        <p class="trip-date">${esc(t.startDate||"日期未定")}${t.endDate?" – "+esc(t.endDate.slice(5)):""}・${nd(t)} 天${(t.members||[]).length>1?"・"+t.members.length+" 人共編":""}</p>
       </div>
-      <div class="cur-now-next-card">
-        <div class="cur-side cur-now">
-          <span class="cur-label">現在</span>
-          <span class="cur-now-text">${nowTxt}</span>
+      <div class="now-next-card">
+        <div class="now-block">
+          <span class="block-label">現在</span>
+          <span class="block-item">${nowTxt}</span>
         </div>
-        <div class="cur-side cur-next">
-          <span class="cur-label">下一步</span>
-          <span class="cur-next-text">${nextTxt}</span>
-          ${next?`<a class="cur-nav-btn" data-a="nav" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener"><i class="ic ic-nav"></i></a>`:""}
+        <div class="block-divider"></div>
+        <div class="next-block">
+          <div class="next-content">
+            <span class="block-label">下一步</span>
+            <span class="block-item">${nextTxt}</span>
+          </div>
+          ${next?`<a class="nav-circle-btn" data-a="nav" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener"><i class="ic ic-nav"></i></a>`:""}
         </div>
       </div>
-      <div class="cur-station-nav">
-        <button class="cur-station-btn" data-a="lvprev"><i class="ic ic-nav-left"></i></button>
-        <button class="cur-station-btn cur-station-active" data-a="lvauto"><i class="ic ic-nav-center"></i></button>
-        <button class="cur-station-btn" data-a="lvnext"><i class="ic ic-nav-right"></i></button>
+      <div class="pagination-bar">
+        <button class="page-btn" data-a="lvprev"><i class="ic ic-nav-left"></i></button>
+        <button class="page-btn page-btn-active" data-a="lvauto"><i class="ic ic-nav-center"></i></button>
+        <button class="page-btn" data-a="lvnext"><i class="ic ic-nav-right"></i></button>
       </div>
-      <div class="cur-action-bar">
-        <button class="cur-action-btn" data-a="m" data-v="diet"><i class="ic ic-utensils"></i><span>飲食卡</span></button>
-        <button class="cur-action-btn" data-a="m" data-v="sos"><i class="ic ic-shield"></i><span>緊急</span></button>
-        <button class="cur-action-btn" data-a="goyen"><i class="ic ic-wallet"></i><span>記帳</span></button>
+      <div class="bottom-shortcuts">
+        <button class="shortcut-btn" data-a="m" data-v="diet"><span class="shortcut-label">飲食卡</span></button>
+        <button class="shortcut-btn" data-a="m" data-v="sos"><span class="shortcut-label">緊急</span></button>
+        <button class="shortcut-btn" data-a="goyen"><span class="shortcut-label">記帳</span></button>
       </div>
     </div>
   `;
