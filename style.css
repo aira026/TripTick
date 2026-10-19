@@ -457,8 +457,8 @@ body.pcopen{overflow:hidden}
   .pc-big .pc-note{margin-top:18px}
 }
 
-/* ===== 當前行程：旅行當下專用頁（嚴格依指定 DOM 結構）===== */
-.cur-page{
+/* ===== 當前行程：旅行當下專用頁（嚴格依用戶指定 HTML 結構）===== */
+.triptick-live-home{
   display:flex;
   flex-direction:column;
   gap:0;
@@ -466,30 +466,75 @@ body.pcopen{overflow:hidden}
   padding:20px 16px 30px
 }
 
+/* 頂部導覽列 */
+.top-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 16px
+}
+.icon-btn{
+  background:none;
+  border:none;
+  font-size:1.2rem;
+  cursor:pointer;
+  color:var(--ink)
+}
+.brand-title{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px
+}
+.brand-title h1{
+  font-size:1.7rem;
+  font-weight:700;
+  color:var(--ink);
+  margin:0
+}
+.brand-title span{
+  font-size:.75rem;
+  color:var(--mut);
+  letter-spacing:.1em;
+  text-transform:uppercase
+}
+.avatar{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  background:#FF7A00;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:600;
+  font-size:1rem
+}
+
 /* 標題與日期區塊 */
-.trip-title-box{
+.trip-info-header{
   display:flex;
   flex-direction:column;
   gap:6px;
   margin-bottom:24px
 }
-.trip-title{
-  font-size:1.7rem;
+.trip-info-header h2{
+  font-size:1.6rem;
   font-weight:700;
   color:var(--ink);
   margin:0;
   letter-spacing:.01em;
   line-height:1.3
 }
-.trip-date{
+.trip-info-header p{
   color:var(--mut);
   font-size:.95rem;
   margin:0;
   line-height:1.5
 }
 
-/* 核心時間軸卡片 */
-.now-next-card{
+/* 核心時間軸卡片（上下分層，絕對不左右並排） */
+.main-now-card{
   display:flex;
   flex-direction:column;
   gap:14px;
@@ -500,64 +545,75 @@ body.pcopen{overflow:hidden}
   border:1px solid rgba(17,17,17,.06);
   margin-bottom:24px
 }
-.now-block{
+.now-section{
   display:flex;
   flex-direction:column;
-  gap:2px;
-  flex:1
+  gap:4px
 }
-.block-divider{
-  width:100%;
-  height:0;
-  border-top:1px solid rgba(17,17,17,.12)
-}
-.next-block{
-  display:flex;
-  flex-direction:row;
-  align-items:center;
-  justify-content:space-between;
-  gap:2px;
-  flex:1
-}
-.next-content{
-  display:flex;
-  flex-direction:column;
-  gap:2px
-}
-.block-label{
+.now-section .label{
   font-size:.72rem;
   font-weight:600;
   letter-spacing:.14em;
   text-transform:uppercase;
   color:var(--mut)
 }
-.block-item{
+.now-section .event-name{
   font-size:1.5rem;
   font-weight:700;
   color:var(--ink);
   line-height:1.4;
   word-break:break-all
 }
+.card-divider{
+  width:100%;
+  height:0;
+  border-top:1px solid rgba(17,17,17,.12)
+}
+.next-section{
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px
+}
+.next-info{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  flex:1
+}
+.next-info .label{
+  font-size:.72rem;
+  font-weight:600;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--mut)
+}
+.next-info .event-time-name{
+  font-size:1.1rem;
+  color:var(--tx);
+  line-height:1.5;
+  word-break:break-all
+}
 .nav-circle-btn{
   display:flex;
   align-items:center;
   justify-content:center;
-  width:46px;
-  height:46px;
+  width:44px;
+  height:44px;
   border-radius:50%;
   border:1px solid rgba(17,17,17,.12);
   background:#fff;
   color:currentColor;
   text-decoration:none;
   cursor:pointer;
-  transition:all .15s;
-  margin-top:6px
+  transition:all .15s
 }
 .nav-circle-btn:active{transform:scale(.92);background:rgba(17,17,17,.04)}
-.nav-circle-btn .ic{width:20px;height:20px;margin:0}
+.nav-circle-btn svg{width:20px;height:20px;margin:0}
 
-/* 站點切換按鈕列 */
-.pagination-bar{
+/* 站點切換列 */
+.pagination-row{
   display:flex;
   justify-content:center;
   gap:10px;
@@ -574,23 +630,23 @@ body.pcopen{overflow:hidden}
   background:#fff;
   color:currentColor;
   cursor:pointer;
-  transition:all .15s
+  transition:all .15s;
+  font-size:1rem
 }
 .page-btn:active{transform:scale(.92)}
-.page-btn.page-btn-active{
+.page-btn.active{
   border-color:#FF7A00;
   background:#FF7A00;
   color:#fff
 }
-.page-btn .ic{width:16px;height:16px;margin:0}
 
-/* 底部三大捷徑列 */
-.bottom-shortcuts{
+/* 底部快捷列 */
+.bottom-shortcuts-row{
   display:flex;
   justify-content:space-between;
   gap:10px
 }
-.shortcut-btn{
+.shortcut-card{
   flex:1;
   display:flex;
   flex-direction:column;
@@ -608,48 +664,7 @@ body.pcopen{overflow:hidden}
   cursor:pointer;
   transition:all .15s
 }
-.shortcut-btn:active{transform:scale(.95);border-color:#FF7A00;color:#FF7A00}
-
-/* 空狀態 */
-.cur-empty{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  padding:70px 20px
-}
-.cur-dot{
-  width:64px;
-  height:64px;
-  border-radius:50%;
-  background:#FF7A00;
-  opacity:.10;
-  margin-bottom:20px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:2rem;
-  color:#FF7A00
-}
-.cur-empty h2{
-  font-size:1.35rem;
-  color:var(--ink);
-  margin:0 0 10px;
-  font-weight:500
-}
-.cur-empty p{
-  color:var(--mut);
-  font-size:1rem;
-  margin:0 0 26px;
-  line-height:1.7
-}
-.cur-empty .cur-pills{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  justify-content:center
-}
+.shortcut-card:active{transform:scale(.95);border-color:#FF7A00;color:#FF7A00}
 
 /* 當前行程頁面無底部懸浮導覽列 */
 #t-current{padding-bottom:0}

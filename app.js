@@ -93,48 +93,61 @@ function calc(){const v=parseFloat($("#jpy")?.value)||0,r=parseFloat($("#rate")?
 function renderNow(t){const ids=["now","tix","storm","yen","pack"],emp=emptyNow();
  const f={now:t=>bar(1)+nowCard(t),tix:t=>bar()+tixHTML(t),storm:t=>bar()+stormHTML(t),yen:t=>bar()+yenHTML(t),pack:t=>bar()+packHTML(t)};ids.forEach(i=>{$("#t-"+i).innerHTML=t?f[i](t):emp});calc();if(t){MiniMap.render("nowmap",ptsOf(t),pickPt);try{buildFood(t)}catch(e){}}}
 
-/* 當前行程：旅行當下專用頁（嚴格依指定 DOM 結構） */
+/* 當前行程：旅行當下專用頁（嚴格依用戶指定 HTML 結構） */
 function renderCurrent(t){
-  const emp='<div class="cur-empty"><div class="cur-dot">◆</div><h2>當前行程</h2><p>尚未有進行中的旅程。</p><div class="cur-pills"><button class="pill" data-a="add" data-v="now">＋ 新增行程</button><button class="pill gl" data-a="join">輸入邀請碼</button></div></div>';
+  const emp='<div class="triptick-live-home"><header class="top-nav"><button class="icon-btn menu-btn" onclick="toggleMenu()">☰</button><div class="brand-title" onclick="goToCurrentTrip()" style="cursor: pointer;"><h1>歷歷</h1><span>TRIPTICK 當前行程</span></div><div class="avatar">李</div></header><section class="trip-info-header"><h2>尚無行程</h2><p>請新增行程以查看當下資訊。</p></section><div class="main-now-card"><div class="now-section"><span class="label">現在</span><div class="event-name">尚無行程</div></div><div class="card-divider"></div><div class="next-section"><div class="next-info"><span class="label">下一步</span><div class="event-time-name">今日行程已結束</div></div></div></div><div class="pagination-row"><button class="page-btn" data-a="lvprev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button><button class="page-btn active" data-a="lvauto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle></svg></button><button class="page-btn" data-a="lvnext"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button></div><div class="bottom-shortcuts-row"><a href="#" class="shortcut-card" data-a="m" data-v="diet"><span class="shortcut-text">飲食卡</span></a><a href="#" class="shortcut-card" data-a="m" data-v="sos"><span class="shortcut-text">緊急</span></a><a href="#" class="shortcut-card" data-a="goyen"><span class="shortcut-text">記帳</span></a></div></div>';
   if(!t){$("#t-current").innerHTML=emp;return;}
   const c=liveCalc(t);
   const now=c.now,next=c.next;
   const nowTxt=now?esc((now.t?now.t+"　":"")+now.h):"尚無行程";
   const nextTxt=next?esc((next.t?next.t+"　":"")+next.h):"今日行程已結束";
   const dest=next?(next.lat!=null?`${next.lat},${next.lng}`:encodeURIComponent((next.q||next.h)+(t.country?" "+t.country:""))):"";
+  const dateLabel=esc(t.startDate||"日期未定")+(t.endDate?" – "+esc(t.endDate.slice(5)):"")+"・"+nd(t)+" 天"+((t.members||[]).length>1?"・"+t.members.length+" 人共編":"");
   $("#t-current").innerHTML=`
-    <div class="cur-page">
-      <div class="trip-title-box">
-        <h1 class="trip-title">${esc(t.title)}</h1>
-        <p class="trip-date">${esc(t.startDate||"日期未定")}${t.endDate?" – "+esc(t.endDate.slice(5)):""}・${nd(t)} 天${(t.members||[]).length>1?"・"+t.members.length+" 人共編":""}</p>
-      </div>
-      <div class="now-next-card">
-        <div class="now-block">
-          <span class="block-label">現在</span>
-          <span class="block-item">${nowTxt}</span>
+    <div class="triptick-live-home">
+      <header class="top-nav">
+        <button class="icon-btn menu-btn" onclick="toggleMenu()">☰</button>
+        <div class="brand-title" onclick="goToCurrentTrip()" style="cursor: pointer;">
+          <h1>歷歷</h1>
+          <span>TRIPTICK 當前行程</span>
         </div>
-        <div class="block-divider"></div>
-        <div class="next-block">
-          <div class="next-content">
-            <span class="block-label">下一步</span>
-            <span class="block-item">${nextTxt}</span>
+        <div class="avatar">李</div>
+      </header>
+      <section class="trip-info-header">
+        <h2>${esc(t.title)}</h2>
+        <p>${dateLabel}</p>
+      </section>
+      <div class="main-now-card">
+        <div class="now-section">
+          <span class="label">現在</span>
+          <div class="event-name">${nowTxt}</div>
+        </div>
+        <div class="card-divider"></div>
+        <div class="next-section">
+          <div class="next-info">
+            <span class="label">下一步</span>
+            <div class="event-time-name">${nextTxt}</div>
           </div>
-          ${next?`<a class="nav-circle-btn" data-a="nav" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener"><i class="ic ic-nav"></i></a>`:""}
+          ${next?`<a class="nav-circle-btn" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg></a>`:""}
         </div>
       </div>
-      <div class="pagination-bar">
-        <button class="page-btn" data-a="lvprev"><i class="ic ic-nav-left"></i></button>
-        <button class="page-btn page-btn-active" data-a="lvauto"><i class="ic ic-nav-center"></i></button>
-        <button class="page-btn" data-a="lvnext"><i class="ic ic-nav-right"></i></button>
+      <div class="pagination-row">
+        <button class="page-btn" data-a="lvprev"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+        <button class="page-btn active" data-a="lvauto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle></svg></button>
+        <button class="page-btn" data-a="lvnext"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
       </div>
-      <div class="bottom-shortcuts">
-        <button class="shortcut-btn" data-a="m" data-v="diet"><span class="shortcut-label">飲食卡</span></button>
-        <button class="shortcut-btn" data-a="m" data-v="sos"><span class="shortcut-label">緊急</span></button>
-        <button class="shortcut-btn" data-a="goyen"><span class="shortcut-label">記帳</span></button>
+      <div class="bottom-shortcuts-row">
+        <a href="#" class="shortcut-card" data-a="m" data-v="diet"><span class="shortcut-text">飲食卡</span></a>
+        <a href="#" class="shortcut-card" data-a="m" data-v="sos"><span class="shortcut-text">緊急</span></a>
+        <a href="#" class="shortcut-card" data-a="goyen"><span class="shortcut-text">記帳</span></a>
       </div>
     </div>
   `;
 }
+
+/* 全域函數：頂部導覽互動 */
+window.toggleMenu=function(){document.body.classList.toggle("dr")};
+window.goToCurrentTrip=function(){go("current")};
 
 /* now view */
 const bkList=t=>[...(t.booking||[])];
