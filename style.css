@@ -364,97 +364,115 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
 .edt .i-edit{flex:none}
 .ai-mic.on{background:rgba(var(--tp-gold),.18);color:#a8742a}
 
-/* ===== 歷史行程：重疊明信片堆疊（Card Stack）+ 聚焦放大 + 雙面翻轉 ===== */
-#l-past{position:relative;height:600px;margin-top:34px}
-#l-past .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 20px}
-/* 卡片：絕對定位、上下微幅交錯疊放（位移由 stackLayout 指定），層級由上而下遞減 */
-.pc-item{position:absolute;top:0;left:0;width:100%;height:100%;transform-origin:top center;cursor:pointer;isolation:isolate;
-  display:flex;justify-content:center;
-  box-shadow:0 18px 36px rgba(90,50,10,.16),0 3px 8px rgba(90,50,10,.07);
-  -webkit-user-select:none;user-select:none;touch-action:pan-y !important;
-  will-change:transform,opacity;
-  transform:translate3d(0,0,0);
-  transition:transform 0.3s cubic-bezier(0.25,1,0.5,1),opacity 0.3s ease !important;}
-.pc-item.dragging{transition:none !important}
-.pc-item.out{opacity:0}
-#l-past .pc-item:hover{box-shadow:0 26px 50px rgba(90,50,10,.2),0 4px 10px rgba(90,50,10,.08)}
-/* 聚焦時：其餘堆疊卡片淡出並停用點擊 */
-#l-past.focused .pc-item{opacity:0;pointer-events:none}
-/* 明信片本體：四邊鋸齒花邊遮罩 + 純白不透明玻璃（正面、背面共用，防透光） */
-.pc-face{
-  --tooth:10px;--depth:7px;
-  --stamp-img:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M0 7L5 0L10 7Z' fill='black'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M0 0L5 7L10 0Z' fill='black'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='10' viewBox='0 0 7 10'%3E%3Cpath d='M7 0L0 5L7 10Z' fill='black'/%3E%3C/svg%3E"),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='10' viewBox='0 0 7 10'%3E%3Cpath d='M0 0L7 5L0 10Z' fill='black'/%3E%3C/svg%3E"),linear-gradient(#000,#000);
-  --stamp-pos:left top,left bottom,left top,right top,center;
-  --stamp-size:var(--tooth) var(--depth),var(--tooth) var(--depth),var(--depth) var(--tooth),var(--depth) var(--tooth),calc(100% - var(--depth) - var(--depth)) calc(100% - var(--depth) - var(--depth));
-  --stamp-rep:repeat-x,repeat-x,repeat-y,repeat-y,no-repeat;
-  position:relative;width:340px !important;height:540px !important;max-height:70vh !important;flex-shrink:0 !important;box-sizing:border-box !important;margin:20px auto 0 auto;overflow:hidden;display:flex;flex-direction:column;
-  z-index:100 !important;
-  background:#ffffff !important; /* 純白不透明：底層／背面其他卡片的文字絕對不會透出 */
-  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
-  -webkit-mask-image:var(--stamp-img);mask-image:var(--stamp-img);
-  -webkit-mask-position:var(--stamp-pos);mask-position:var(--stamp-pos);
-  -webkit-mask-size:var(--stamp-size);mask-size:var(--stamp-size);
-  -webkit-mask-repeat:var(--stamp-rep);mask-repeat:var(--stamp-rep);
+/* ===== 歷史行程：橫向滑動明信片列表（Horizontal Scroll / Swipeable List） ===== */
+#l-past{
+  /* 突破 body 的 14px 內距，讓列表左右滿版滑動 */
+  margin:34px -14px 0;
+  display:flex;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  gap:20px;
+  padding:20px;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  align-items:flex-start;
+  overscroll-behavior-x:contain;
 }
-/* 正面：文字資訊頁（行程名稱／簡介／心情札記／編輯按鈕），放滿整張明信片 */
-.pc-front{position:relative;display:flex;flex-direction:column;flex-grow:1 !important;box-sizing:border-box;padding:28px 26px 30px}
-.pc-scroll{flex:1 !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch !important;max-height:calc(680px - 140px) !important}
-.pc-front h3{font-size:1.18rem;font-weight:500;color:var(--ink);line-height:1.35;letter-spacing:.01em;padding-right:34px}
-.pc-meta{margin-top:8px;font-size:.86rem;color:var(--mut)}
-.pc-mates{margin-top:3px;font-size:.86rem;color:var(--mut)}
-.pc-note{margin-top:16px;min-height:0;overflow:hidden} /* 心情札記：純文字，移除多餘淡色方框 */
+#l-past::-webkit-scrollbar{display:none}
+#l-past .empty{flex:0 0 100%;display:flex;align-items:center;justify-content:center;padding:40px 20px;text-align:center;color:var(--mut)}
+
+/* 明信片卡片：固定尺寸、不縮放、磁吸對齊 */
+.pc-item{
+  --photo-h:calc(320px * 4 / 3);   /* 3:4 直式照片高度 */
+  --body-h:232px;                  /* 下方文字區收合高度 */
+  position:relative;
+  flex:0 0 320px;
+  width:320px;
+  height:calc(var(--photo-h) + var(--body-h));
+  scroll-snap-align:center;
+  scroll-snap-stop:always;
+  background:#ffffff;
+  border-radius:20px;
+  overflow:hidden;
+  box-shadow:0 10px 30px rgba(0,0,0,0.12);
+  display:flex;
+  flex-direction:column;
+}
+
+/* 上方照片區：嚴格 3:4 直式比例、填滿不變形（網址來自編輯模式） */
+.pc-photo{position:relative;width:100%;aspect-ratio:3 / 4;background:linear-gradient(135deg,#f3e2cb,#ffd9a8)}
+.pc-photo img{display:block;width:100%;height:100%;object-fit:cover}
+.pc-photo .pc-flag{position:absolute;inset:0;display:grid;place-items:center;font-size:3.2rem;opacity:.6;pointer-events:none}
+/* 展開時：未被文字遮蔽的上半照片蓋半透明黑色，營造前後景 */
+.pc-shade{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .45s ease;pointer-events:none}
+.pc-item.open .pc-shade{opacity:1}
+
+/* 下方文字區：純白底；展開時上滑遮蔽約八成照片 */
+.pc-body{
+  position:absolute;
+  left:0;right:0;bottom:0;
+  height:var(--body-h);
+  display:flex;
+  flex-direction:column;
+  background:#ffffff;
+  z-index:2;
+  transition:height .45s cubic-bezier(.25,1,.5,1);
+}
+.pc-item.open .pc-body{height:calc(var(--photo-h) * .8 + var(--body-h))}
+
+/* 把手：點擊展開／收合心情札記 */
+.pc-grab{
+  flex:none;
+  margin:8px auto 0;
+  min-height:30px;
+  padding:0 16px;
+  border:0;
+  border-radius:999px;
+  background:rgba(17,17,17,.06);
+  color:var(--mut);
+  font-size:.72rem;
+  font-weight:600;
+  letter-spacing:.06em;
+  cursor:pointer;
+}
+.pc-grab .g-close{display:none}
+.pc-item.open .pc-grab .g-open{display:none}
+.pc-item.open .pc-grab .g-close{display:inline}
+
+/* 文字區捲動容器：內容多時可上下滑動 */
+.pc-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 20px 4px}
+.pc-title{font-size:.72rem;letter-spacing:.16em;color:var(--mut);text-transform:uppercase}
+/* 第一行：國家 —— 明體標題大字、靠左 */
+.pc-country{margin-top:2px;font-family:"Noto Serif TC","Songti TC","PMingLiU","MingLiU",serif;font-size:1.7rem;font-weight:600;color:var(--ink);line-height:1.25;letter-spacing:.02em;text-align:left}
+/* 第二行：日期、同行者 —— 維持原本黑體樣式／顏色／字級、靠左 */
+.pc-meta{margin-top:8px;font-size:.86rem;color:var(--mut);text-align:left}
+/* 第三行：心情札記 —— 維持原本字體樣式／顏色／字級、靠左；城市置於右側 */
+.pc-note-row{display:flex;align-items:flex-start;gap:10px;margin-top:14px}
+.pc-note{flex:1;min-width:0;text-align:left}
 .pc-note em{display:block;font-style:normal;font-size:.68rem;letter-spacing:.2em;color:var(--mut)}
 .pc-note p{margin-top:7px;font-size:.94rem;line-height:1.75;color:var(--tx);white-space:pre-wrap;overflow-wrap:anywhere}
-.pc-preview{width:100%;height:auto;max-height:220px;object-fit:cover;border-radius:12px;margin-top:10px;display:block}
-#l-past .pc-preview{max-height:260px}
-.pc-big .pc-preview{max-height:320px}
-.pc-act{margin-top:auto;padding-top:16px}
-.pc-act .pill{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 18px;font-size:.82rem;border:0;border-radius:999px;background:rgba(255,255,255,.82);color:#1a1a1a;font-weight:600;box-shadow:0 6px 14px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.06);cursor:pointer;transition:transform .15s,box-shadow .15s}
+.pc-cities{flex:0 1 auto;max-width:40%;margin-top:16px;font-size:.78rem;color:var(--mut);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 底部操作按鈕：整齊等寬排列 */
+.pc-act{flex:none;display:flex;gap:8px;margin-top:auto;padding:10px 14px 14px;background:#fff}
+.pc-act .pill{flex:1;min-height:40px;padding:0 6px;font-size:.8rem;border-radius:999px;white-space:nowrap}
 .pc-act .pill:active{transform:scale(.96)}
-/* 堆疊卡片（滿幅）：完整資訊與操作鈕，內容不截斷 */
-#l-past .pc-front{padding:26px 26px 22px}
-#l-past .pc-front h3{font-size:1.3rem;padding-right:0}
-#l-past .pc-meta{font-size:.9rem;white-space:normal;overflow:visible;text-overflow:clip}
-#l-past .pc-mates{font-size:.9rem}
-#l-past .pc-note{margin-top:18px}
-#l-past .pc-note p{font-size:.96rem;line-height:1.75;max-height:none;overflow:visible}
-#l-past .pc-act{padding-top:18px}
-#l-past .pc-act .pill{min-height:42px;padding:0 17px;font-size:.84rem}
 .fm .pc-up{margin-top:6px}
 .fm label .meta{display:block;margin-top:5px}
-
-/* ===== 聚焦放大：滿幅明信片置中，其餘淡出 ===== */
-.pc-over{position:fixed;inset:0;z-index:2600;display:flex;align-items:center;justify-content:center;transition:opacity 0.3s cubic-bezier(0.25,1,0.5,1)}
-.pc-over[hidden]{display:none}
-.pc-over.closing{pointer-events:none}
-.pc-scrim{position:absolute;inset:0;background:rgba(52,36,18,.34);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:opacity 0.3s cubic-bezier(0.25,1,0.5,1);cursor:pointer}
-.pc-over.closing .pc-scrim{opacity:0}
-.pc-stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:16px;perspective:1400px}
-.pc-big{position:relative;width:min(720px,calc(100vw - 28px));height:min(560px,calc(100vh - 150px));min-height:0;border-radius:10px;transform:none;cursor:default;perspective:1600px;will-change:transform,opacity;transform:translate3d(0,0,0);transition:transform 0.3s cubic-bezier(0.25,1,0.5,1),opacity 0.3s ease !important}
-.pc-big .pc-note{margin-top:26px}
-.pc-big .pc-note p{font-size:1.02rem;line-height:1.8}
-.pc-big .pc-act{padding-top:22px}
-.pc-big .pc-act .pill{min-height:44px;padding:0 19px;font-size:.88rem}
-body.pcopen{overflow:hidden}
 
 /* ===== 「新增旅程」：右下角固定圓形懸浮按鈕（極簡 + 加號） ===== */
 #t-past .addfab{position:fixed !important;right:24px !important;bottom:24px !important;z-index:999 !important;pointer-events:none}
 #t-past .addfab .pill{position:relative !important;pointer-events:auto;width:56px !important;height:56px !important;min-height:56px !important;padding:0 !important;border-radius:50% !important;background:rgba(255,255,255,0.75) !important;-webkit-backdrop-filter:blur(12px) !important;backdrop-filter:blur(12px) !important;border:1px solid rgba(255,255,255,0.9) !important;color:var(--ink) !important;font-weight:700 !important;box-shadow:0 4px 20px rgba(0,0,0,0.15) !important;cursor:pointer !important;transition:transform .15s,box-shadow .15s !important;display:flex !important;align-items:center !important;justify-content:center !important;overflow:hidden !important;font-size:28px !important;line-height:1 !important}
 #t-past .addfab .pill:active{transform:scale(.92) !important}
 
-/* ===== 「新增旅程」：底部懸浮的透光白色玻璃按鈕 ===== */
+/* ===== 手機版微調 ===== */
 @media(max-width:560px){
-  #l-past{height:430px;margin-top:30px}
-  #l-past .pc-front{padding:20px 18px 18px}
-  #l-past .pc-front h3{font-size:1.12rem}
-  #l-past .pc-note{margin-top:14px}
-  #l-past .pc-act .pill{min-height:38px;padding:0 14px;font-size:.78rem}
-  .pc-big .pc-front h3{padding-right:126px}
-  .pc-big .pc-act{padding-right:0}
-  .pc-big{width:calc(100vw - 20px);height:min(540px,calc(100vh - 132px))}
-  .pc-big .pc-front{padding:24px 20px 20px}
-  .pc-big .pc-front h3{font-size:1.26rem}
-  .pc-big .pc-note{margin-top:18px}
+  #l-past{margin-top:28px;gap:16px;padding:16px}
+  .pc-item{--body-h:214px}
+  .pc-scroll{padding:6px 16px 4px}
+  .pc-country{font-size:1.5rem}
+  .pc-act{padding:8px 10px 12px}
+  .pc-act .pill{min-height:38px;font-size:.76rem}
 }
 
 /* ===== 當前行程：旅行當下專用頁（嚴格依用戶指定 HTML 結構）===== */
