@@ -252,12 +252,12 @@ function tcard(t){if(t.status==="past")return pcard(t);const fut=t.status==="fut
  return`<article class="glass tc ${fut?"fut":""}"><div class="ph">${(t.image||photoOf(t.id))?`<img src="${esc(t.image||photoOf(t.id))}" alt="${esc(t.title)}" loading="lazy" onerror="this.remove()">`:""}<span>${flagOf(t)}</span></div><div class="in"><h3>${esc(t.title)}</h3><p class="meta">${esc(t.country)}・${esc(t.startDate||"日期未定")}${t.endDate?" – "+esc(t.endDate.slice(5)):""}・${nd(t)} 天</p>${t.notes?`<p style="margin-top:8px;font-size:.9rem">${esc(t.notes)}</p>`:""}
  <div class="pills" style="margin-top:10px">${t.spots?.length?`<a class="pill gl" href="https://maps.google.com/?q=${t.spots[0].lat},${t.spots[0].lng}" target="_blank" rel="noopener">地圖</a>`:""}${t.status==="past"?`<button class="pill" data-a="setcur" data-v="${esc(t.id)}">重新設為當前行程</button>`:""}${fut?`<button class="pill" data-a="setcur" data-v="${esc(t.id)}">設為當前行程</button>`:""}${me?`<button class="pill gl" data-a="edit" data-v="${esc(t.id)}"><i class=i-edit></i> 編輯</button>`:""}${t.owner===me?.uid?`<button class="pill gl" data-a="del" data-v="${esc(t.id)}"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg> 刪除</button>`:""}</div></div></article>`}
 
-/* ===== 行程照片：每張卡片 1 張（FileReader → Base64，存 localStorage）。上傳新照片即覆蓋舊的；未顯示在前台的照片自動清理 ===== */
+/* ===== 行程照片：每張卡片 1 張。上傳優先寫入 Firestore（image 欄位，雲端持久保存，清除瀏覽資料也不會消失）；雲端失敗才退回本機 localStorage。前台只顯示 1 張，更新即覆蓋，看不見的自動清理 ===== */
 const PH_KEY=id=>"tp-photo-"+id,PH_OLD=id=>"tp-photos-"+id;
 function photoOf(id){try{const v=localStorage.getItem(PH_KEY(id));return typeof v==="string"&&v.indexOf("data:image")===0?v:""}catch(e){return""}}
 function setPhoto(id,data){try{if(data)localStorage.setItem(PH_KEY(id),data);else localStorage.removeItem(PH_KEY(id));localStorage.removeItem(PH_OLD(id));return true}
  catch(e){console.warn("[photo] 本機儲存失敗",e);toast("照片存不下：這台裝置的本機空間不足");return false}}
-/* 自動清理：舊版多張格式只保留第 1 張、其餘直接刪除；行程已用網址照片或行程已刪除 → 清掉本機照片 */
+/* 自動清理：舊版多張格式只保留第 1 張、其餘直接刪除；行程已用照片（雲端 image 或網址）→ 清掉重複的本機備援；行程已刪除 → 清掉本機照片 */
 function photoGC(){try{const v=visible(),ids=new Set(v.map(t=>t.id));
  Object.keys(localStorage).forEach(k=>{
   if(k.indexOf("tp-photos-")===0){ /* 舊版陣列：只留第 1 張，整個舊 key 刪除 */
@@ -267,31 +267,37 @@ function photoGC(){try{const v=visible(),ids=new Set(v.map(t=>t.id));
    localStorage.removeItem(k)}
   else if(k.indexOf("tp-photo-")===0){const id=k.slice(9),t=v.find(x=>x.id===id);
    if(!ids.has(id)||(t&&t.image))localStorage.removeItem(k)}})}catch(e){}}
-/* ===== 圖片自動壓縮：FileReader → <canvas> 強制等比例縮放（長邊 ≤800px）+ JPEG 品質 0.7，把數 MB 原圖壓到約 100~200KB，避免超出 localStorage 額度 ===== */
-const PH_MAX_DIM=800,PH_QUAL=.7,PH_SAFE_LEN=500000; /* 壓縮規格；回退值安全上限約 500KB Base64 */
+/* ===== 圖片自動壓縮：FileReader → <canvas> 等比例縮放，由高畫質逐步降級直到 Base64 ≤500KB（JPEG 約 375KB），兼顧畫質與容量 ===== */
+const PH_SAFE_LEN=500000; /* Base64 上限 ≈500KB 字元 */
 function shrinkImg(f){return new Promise(res=>{const fr=new FileReader();
  fr.onerror=()=>res(null);
  fr.onload=()=>{const im=new Image(),raw=String(fr.result||"");
   im.onerror=()=>res(raw.indexOf("data:image")===0&&raw.length<=PH_SAFE_LEN?raw:null); /* 解碼失敗：僅在檔案夠小時才保留 */
   im.onload=()=>{try{
-    /* 依序嘗試：800px/0.7 → 640px/0.6 → 500px/0.5，確保 Base64 一定夠小 */
-    const steps=[[PH_MAX_DIM,PH_QUAL],[640,.6],[500,.5]];
-    for(const[lim,q]of steps){
+    /* 由高畫質（1280px/0.82）起逐步縮小，第一個 ≤500KB 的結果即採用，避免過度犧牲畫質 */
+    const steps=[[1280,.82],[1100,.8],[960,.78],[850,.75],[760,.72],[640,.68],[512,.6],[400,.55],[320,.5]];
+    for(let i=0;i<steps.length;i++){const[lim,q]=steps[i],last=i===steps.length-1;
       const s=Math.min(1,lim/Math.max(im.width,im.height)),c=document.createElement("canvas");
       c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));
       const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);
       const out=c.toDataURL("image/jpeg",q);
-      if(out.length<=PH_SAFE_LEN||lim===steps[steps.length-1][0]){res(out);return}
+      if(out.length<=PH_SAFE_LEN||last){res(out);return}
     }
     res(null)}catch(e){res(raw.indexOf("data:image")===0&&raw.length<=PH_SAFE_LEN?raw:null)}};
   im.src=raw};
  fr.readAsDataURL(f)})}
-/* 上傳：單張取代。每次選擇新照片直接覆蓋舊的，舊資料自動從儲存空間移除（無張數上限） */
+/* 上傳：單張取代。優先寫 Firestore 雲端（持久保存）；失敗才退回本機。舊照片在覆蓋瞬間即被取代（無張數上限） */
 async function addPhotos(id,files){const f=[...(files||[])].find(x=>x&&/^image\//.test(x.type));
  if(!f)return toast("請選擇圖片檔");
  toast("上傳中…");
  const d=await shrinkImg(f);
  if(!d)return toast("上傳失敗，請換一張圖片試試");
+ const t=TRIPS.find(y=>y.id===id);
+ if(t&&db&&me){ /* 雲端為主：寫入行程文件 image 欄位，換瀏覽器／清瀏覽資料都不會消失 */
+  const ok=await updateDoc(tdoc(t),ser({image:d})).then(()=>true).catch(e=>{console.error("[photo] 雲端寫入失敗",e);return false});
+  if(ok){setPhoto(id,"");render();toast("照片已更新");return}
+  toast("雲端同步失敗，先存到本機，連線後再試一次");
+ }
  if(setPhoto(id,d)){render();toast("照片已更新")}}
 
 /* ===== 歷史明信片：上方 3:4 照片 + 下方純白文字區（橫向滑動列表卡片） ===== */
@@ -423,7 +429,7 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="pcexp"){pcExpToggle(b);return}
  if(a==="save"){saveForm();return}
  if(a==="del"){const x=TRIPS.find(y=>y.id===v);if(x&&x.owner===me?.uid&&confirm("刪除這趟旅程？所有共編成員都會失去這份行程。"))deleteDoc(tdoc(x)).then(()=>{setPhoto(x.id,"");toast("已刪除")});return}
- if(a==="phdel"){if(setPhoto(v,"")){render();toast("已移除照片")}return}
+ if(a==="phdel"){const t=TRIPS.find(y=>y.id===v);if(t&&t.image&&db&&me)updateDoc(tdoc(t),ser({image:""})).catch(()=>{});if(t)t.image="";if(setPhoto(v,"")){render();toast("已移除照片")}return}
  if(a==="auth"){if(!FB_OK)return toast("尚未設定 Firebase，請先填 firebase-config.js");if(me){if(confirm("要登出嗎？登出會清除這台裝置上的離線快照。"))signOut(auth).then(()=>{purgeLocal();TRIPS=[];SNAP=null;render()})}else login();return}
  if(a==="join"){if(!me)return toast("請先登入 Google 帳戶");modal('<h3>輸入邀請碼</h3><div class="fm"><label>邀請碼<input id="f-code" maxlength="8" placeholder="例如 K7M2QX" style="text-transform:uppercase"></label><div class="pills"><button class="pill" data-a="dojoin">加入行程</button></div></div>');return}
  if(a==="dojoin"){joinTrip($("#f-code").value).then(ok=>{if(ok)$("#modal").classList.remove("on")}).catch(er=>{console.error("[dojoin]",er);toast("加入失敗："+(er.code==="permission-denied"?"權限被拒":(er.code||er.message)))});return}
