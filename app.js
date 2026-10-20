@@ -267,15 +267,23 @@ function photoGC(){try{const v=visible(),ids=new Set(v.map(t=>t.id));
    localStorage.removeItem(k)}
   else if(k.indexOf("tp-photo-")===0){const id=k.slice(9),t=v.find(x=>x.id===id);
    if(!ids.has(id)||(t&&t.image))localStorage.removeItem(k)}})}catch(e){}}
-/* 先用 FileReader 讀成 Base64，再以 canvas 縮到長邊 1280、JPEG 0.78，避免爆 localStorage 額度 */
+/* ===== 圖片自動壓縮：FileReader → <canvas> 強制等比例縮放（長邊 ≤800px）+ JPEG 品質 0.7，把數 MB 原圖壓到約 100~200KB，避免超出 localStorage 額度 ===== */
+const PH_MAX_DIM=800,PH_QUAL=.7,PH_SAFE_LEN=500000; /* 壓縮規格；回退值安全上限約 500KB Base64 */
 function shrinkImg(f){return new Promise(res=>{const fr=new FileReader();
  fr.onerror=()=>res(null);
  fr.onload=()=>{const im=new Image(),raw=String(fr.result||"");
-  im.onerror=()=>res(raw.indexOf("data:image")===0?raw:null);
-  im.onload=()=>{try{const max=1280,s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");
-    c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));
-    const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);
-    res(c.toDataURL("image/jpeg",.78))}catch(e){res(raw.indexOf("data:image")===0?raw:null)}};
+  im.onerror=()=>res(raw.indexOf("data:image")===0&&raw.length<=PH_SAFE_LEN?raw:null); /* 解碼失敗：僅在檔案夠小時才保留 */
+  im.onload=()=>{try{
+    /* 依序嘗試：800px/0.7 → 640px/0.6 → 500px/0.5，確保 Base64 一定夠小 */
+    const steps=[[PH_MAX_DIM,PH_QUAL],[640,.6],[500,.5]];
+    for(const[lim,q]of steps){
+      const s=Math.min(1,lim/Math.max(im.width,im.height)),c=document.createElement("canvas");
+      c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));
+      const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);
+      const out=c.toDataURL("image/jpeg",q);
+      if(out.length<=PH_SAFE_LEN||lim===steps[steps.length-1][0]){res(out);return}
+    }
+    res(null)}catch(e){res(raw.indexOf("data:image")===0&&raw.length<=PH_SAFE_LEN?raw:null)}};
   im.src=raw};
  fr.readAsDataURL(f)})}
 /* 上傳：單張取代。每次選擇新照片直接覆蓋舊的，舊資料自動從儲存空間移除（無張數上限） */
@@ -331,7 +339,7 @@ function form(st,id){const t0=TRIPS.find(x=>x.id===id),t=t0?{...t0,status:status
  <label>國家<input id="f-country" list="cl" value="${esc(t.country)}" placeholder="例如：泰國" required></label><datalist id="cl">${Object.keys(FL).map(k=>`<option value="${k}">`).join("")}</datalist>
  <div class="two"><label>出發日<input id="f-s" type="date" value="${esc(t.startDate)}"></label><label>回程日<input id="f-e" type="date" value="${esc(t.endDate)}"></label></div>
  <label>類型<select id="f-st"><option value="now" ${t.status==="now"?"selected":""}>當前旅程</option><option value="past" ${t.status==="past"?"selected":""}>歷史旅程</option><option value="future" ${t.status==="future"?"selected":""}>未來清單</option></select></label>
- ${id?`<label>照片（本機相簿，每張卡片 1 張，上傳新照片會自動取代）<span class="pc-up">從相簿選擇<input class="pc-file" type="file" accept="image/*" data-ph="${esc(id)}"></span><span class="meta">未顯示在明信片上的照片會自動從儲存空間移除。</span></label>`:`<label>照片<span class="meta">先按「儲存」建立行程，再到歷史明信片上傳照片。</span></label>`}
+ ${id?`<label>照片（上傳新照片將自動取代舊照片）<span class="pc-up">從相簿選擇<input class="pc-file" type="file" accept="image/*" data-ph="${esc(id)}"></span></label>`:`<label>照片<span class="meta">先按「儲存」建立行程，再到歷史明信片上傳照片。</span></label>`}
  <label>備註<textarea id="f-note" rows="3">${esc(t.notes)}</textarea></label>
  <label>照片網址<input id="f-image" type="text" value="${esc(t.image||"")}" placeholder="貼上圖片網址（如 Google 雲端公開圖片連結）"></label>
  <details><summary>進階：座標（留空會自動查詢）</summary><div class="two"><label>緯度<input id="f-lat" type="number" step="any" value="${sp.lat??""}"></label><label>經度<input id="f-lng" type="number" step="any" value="${sp.lng??""}"></label></div></details>
@@ -377,7 +385,7 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="edit"){form(null,v);return}
  if(a==="pcexp"){pcExpToggle(b);return}
  if(a==="save"){saveForm();return}
- if(a==="del"){const x=TRIPS.find(y=>y.id===v);if(x&&x.owner===me?.uid&&confirm("刪除這趟旅程？所有共編成員都會失去這份行程。"))deleteDoc(tdoc(x)).then(()=>toast("已刪除"));return}
+ if(a==="del"){const x=TRIPS.find(y=>y.id===v);if(x&&x.owner===me?.uid&&confirm("刪除這趟旅程？所有共編成員都會失去這份行程。"))deleteDoc(tdoc(x)).then(()=>{setPhoto(x.id,"");toast("已刪除")});return}
  if(a==="phdel"){if(setPhoto(v,"")){render();toast("已移除照片")}return}
  if(a==="auth"){if(!FB_OK)return toast("尚未設定 Firebase，請先填 firebase-config.js");if(me){if(confirm("要登出嗎？登出會清除這台裝置上的離線快照。"))signOut(auth).then(()=>{purgeLocal();TRIPS=[];SNAP=null;render()})}else login();return}
  if(a==="join"){if(!me)return toast("請先登入 Google 帳戶");modal('<h3>輸入邀請碼</h3><div class="fm"><label>邀請碼<input id="f-code" maxlength="8" placeholder="例如 K7M2QX" style="text-transform:uppercase"></label><div class="pills"><button class="pill" data-a="dojoin">加入行程</button></div></div>');return}
