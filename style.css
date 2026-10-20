@@ -504,6 +504,7 @@ body.pcopen{overflow:hidden}
 
 /* D? 天數標籤（位於「現在」上方） */
 .day-badge{
+  display:inline-block;
   align-self:flex-start;
   padding:2px 9px;
   border-radius:999px;
@@ -590,30 +591,59 @@ body.pcopen{overflow:hidden}
 .nav-circle-btn:active{transform:scale(.92);background:rgba(17,17,17,.04)}
 .nav-circle-btn svg{width:20px;height:20px;margin:0}
 
-/* 站點切換列：lvprev 於飲食卡上方、lvauto 置中、lvnext 於記帳上方 */
+/* 行程卡片：水平 Scroll Snap 容器與單卡 */
+.trip-carousel{
+  display:flex;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  margin-bottom:20px;
+  position:relative
+}
+.trip-carousel::-webkit-scrollbar{display:none}
+.trip-card{
+  flex:0 0 100%;
+  scroll-snap-align:center;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-height:180px;
+  padding:18px 16px;
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,.7);
+  background:rgba(255,255,255,.55);
+  -webkit-backdrop-filter:blur(16px) saturate(160%);
+  backdrop-filter:blur(16px) saturate(160%);
+  box-shadow:0 10px 26px rgba(17,17,17,.08)
+}
+.trip-card.is-now{border-color:rgba(255,122,0,.55)}
+.trip-card .card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.trip-card .card-meta .day-badge{align-self:center}
+.trip-card .card-date{font-size:.72rem;color:var(--mut)}
+.trip-card .card-tag{font-size:.7rem;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:999px;background:rgba(17,17,17,.05);color:var(--mut)}
+.trip-card .card-tag.now{background:rgba(255,122,0,.12);color:#FF7A00}
+.trip-card .card-time{font-size:.85rem;font-weight:600;color:#FF7A00;letter-spacing:.02em}
+.trip-card .event-name{font-size:1.35rem;font-weight:700;color:var(--ink);line-height:1.35;word-break:break-all}
+.trip-card.is-next .event-name{font-size:1.15rem;color:var(--tx)}
+.trip-card .card-desc{font-size:.85rem;color:var(--tx);line-height:1.5;word-break:break-word}
+.trip-card .card-foot{display:flex;justify-content:flex-end;margin-top:auto}
+
+/* 站點切換列：三顆圓鈕水平置中（prev/next 對稱、橘色重置置中） */
 .pagination-row{
-  display:grid;
-  grid-template-columns:1fr auto 1fr;
+  display:flex;
+  justify-content:center;
   align-items:center;
+  gap:16px;
   margin-top:auto;
   margin-bottom:14px
 }
-.page-btn.pg-prev{
-  width:88px;
-  height:88px;
-  justify-self:start
-}
-.page-btn.pg-prev svg{width:34px;height:34px}
-.page-btn.pg-next{
-  width:132px;
-  height:132px;
-  justify-self:end
-}
-.page-btn.pg-next svg{width:52px;height:52px}
 .page-btn{
   display:flex;
   align-items:center;
   justify-content:center;
+  flex:0 0 auto;
   width:44px;
   height:44px;
   border-radius:50%;
@@ -624,6 +654,9 @@ body.pcopen{overflow:hidden}
   transition:all .15s;
   font-size:1rem
 }
+.page-btn svg{width:20px;height:20px}
+.page-btn.pg-prev,.page-btn.pg-next{width:88px;height:88px}
+.page-btn.pg-prev svg,.page-btn.pg-next svg{width:34px;height:34px}
 .page-btn:active{transform:scale(.92)}
 .page-btn.active{
   border-color:#FF7A00;

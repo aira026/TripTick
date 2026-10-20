@@ -94,55 +94,107 @@ function renderNow(t){const ids=["now","tix","storm","yen","pack"],emp=emptyNow(
  const f={now:t=>bar(1)+nowCard(t),tix:t=>bar()+tixHTML(t),storm:t=>bar()+stormHTML(t),yen:t=>bar()+yenHTML(t),pack:t=>bar()+packHTML(t)};ids.forEach(i=>{$("#t-"+i).innerHTML=t?f[i](t):emp});calc();if(t){MiniMap.render("nowmap",ptsOf(t),pickPt);try{buildFood(t)}catch(e){}}}
 
 /* 當前行程：旅行當下專用頁 */
+let CUR_TRIP=null,CUR_REAL=-1;
 function renderCurrent(t){
   const prevSvg='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>';
   const nextSvg='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>';
   const autoSvg='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>';
-  const pagRow='<div class="pagination-row"><button class="page-btn pg-prev" data-a="lvprev" aria-label="上一個">'+prevSvg+'</button><button class="page-btn pg-auto active" data-a="lvauto" aria-label="回到即時">'+autoSvg+'</button><button class="page-btn pg-next" data-a="lvnext" aria-label="下一個">'+nextSvg+'</button></div>';
+  const pagRow='<div class="pagination-row"><button class="page-btn pg-prev" data-a="cprev" aria-label="上一站">'+prevSvg+'</button><button class="page-btn pg-auto active" data-a="creset" aria-label="回到當下">'+autoSvg+'</button><button class="page-btn pg-next" data-a="cnext" aria-label="下一站">'+nextSvg+'</button></div>';
   const shortRow='<div class="bottom-shortcuts-row"><a href="#" class="shortcut-card" data-a="m" data-v="diet"><span class="shortcut-text">飲食卡</span></a><a href="#" class="shortcut-card" data-a="m" data-v="sos"><span class="shortcut-text">緊急</span></a><a href="#" class="shortcut-card" data-a="goyen"><span class="shortcut-text">記帳</span></a></div>';
-  const emp='<div class="triptick-live-home"><section class="trip-info-header"><h2>尚無行程</h2><p>請新增行程以查看當下資訊。</p></section><div class="now-next-info"><div class="now-section"><div class="day-badge">D0</div><span class="label">現在</span><div class="event-name">尚無行程</div></div><div class="card-divider"></div><div class="next-section"><div class="next-info"><span class="label">下一步</span><div class="event-time-name">今日行程已結束</div></div></div></div>'+pagRow+shortRow+'</div>';
-  if(!t){$("#t-current").innerHTML=emp;return;}
-  const c=liveCalc(t);
-  if(!c){$("#t-current").innerHTML=emp;return;}
-  const now=c.now,next=c.next;
-  const nowTxt=now?esc((now.t?now.t+"　":"")+now.h):"尚無行程";
-  let nextTxt;
-  if(next)nextTxt=esc((next.t?next.t+"　":"")+next.h);
-  else if(c.off&&!c.before)nextTxt="旅程已結束";
-  else if(c.before)nextTxt="尚無行程";
-  else nextTxt="結束當天行程";
-  const dest=next?(next.lat!=null?`${next.lat},${next.lng}`:encodeURIComponent((next.q||next.h)+(t.country?" "+t.country:""))):"";
+  const emp='<div class="triptick-live-home"><section class="trip-info-header"><h2>尚無行程</h2><p>請新增行程以查看當下資訊。</p></section>'+pagRow+shortRow+'</div>';
+  if(!t){$("#t-current").innerHTML=emp;CUR_TRIP=null;CUR_REAL=-1;return;}
+  const D=getDays(t);
+  const total=D.reduce((s,dd)=>s+((dd.items||[]).length),0);
+  if(!total){$("#t-current").innerHTML=emp;CUR_TRIP=null;CUR_REAL=-1;return;}
+  const r=realPos(t);
+  const pre=[];let acc=0;D.forEach(dd=>{pre.push(acc);acc+=(dd.items||[]).length});
+  let rn=-1,rnxt=-1;
+  if(r){const its=D[r.d].items||[];if(r.i>=0&&r.i<its.length)rn=pre[r.d]+r.i;if(r.i+1<its.length)rnxt=pre[r.d]+r.i+1;}
+  const dayNum=r&&r.before?0:(r?r.d+1:0);
+  const navSvg='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>';
+  let cards="";
+  D.forEach((dd,di)=>{(dd.items||[]).forEach((it,ii)=>{
+    const flat=pre[di]+ii;
+    const isNow=flat===rn&&!r.off;
+    const isNext=flat===rnxt&&!r.off&&flat!==rn;
+    const tag=isNow?"現在":(isNext?"下一步":"");
+    const dest=it.lat!=null?`${it.lat},${it.lng}`:encodeURIComponent((it.q||it.h||"")+(t.country?" "+t.country:""));
+    cards+=`<div class="trip-card${isNow?" is-now":""}${isNext?" is-next":""}">
+      <div class="card-meta">
+        <span class="day-badge">${esc(dd.k||("D"+(di+1)))}</span>
+        ${dd.date?`<span class="card-date">${esc(dd.date)}</span>`:""}
+        ${tag?`<span class="card-tag${isNow?" now":""}">${tag}</span>`:""}
+      </div>
+      ${it.t?`<div class="card-time">${esc(it.t)}</div>`:""}
+      <div class="event-name">${esc(it.h||"")}</div>
+      ${it.pos?`<div class="card-desc">${esc(it.pos)}</div>`:""}
+      <div class="card-foot"><a class="nav-circle-btn" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener" aria-label="導航">${navSvg}</a></div>
+    </div>`;
+  })});
   const dateLabel=esc(t.startDate||"日期未定")+(t.endDate?" – "+esc(t.endDate.slice(5)):"")+"・"+nd(t)+" 天"+((t.members||[]).length>1?"・"+t.members.length+" 人共編":"");
   const nowD=new Date();
   const dateStr=`${nowD.getFullYear()}/${String(nowD.getMonth()+1).padStart(2,"0")}/${String(nowD.getDate()).padStart(2,"0")}`;
   const nowTime=nowD.toLocaleTimeString("zh-TW",{hour:"2-digit",minute:"2-digit"});
-  const dayNum=c.before?0:c.d+1;
+  const newReal=realIdx(t);
+  let prevIdx=-1;
+  const prevEl=document.querySelector("#t-current .trip-carousel");
+  if(prevEl&&prevEl.children.length){const mid=prevEl.scrollLeft+prevEl.clientWidth/2;let best=0,bd=1e9;for(let i=0;i<prevEl.children.length;i++){const ce=prevEl.children[i];const dl=Math.abs((ce.offsetLeft+ce.offsetWidth/2)-mid);if(dl<bd){bd=dl;best=i}}prevIdx=best;}
+  let target;
+  if(t.id!==CUR_TRIP||prevIdx<0)target=newReal;
+  else if(prevIdx===CUR_REAL)target=newReal;
+  else target=Math.min(prevIdx,total-1);
+  CUR_TRIP=t.id;CUR_REAL=newReal;
   $("#t-current").innerHTML=`
     <div class="triptick-live-home">
       <section class="trip-info-header">
         <h2><a href="#" class="trip-title-link" data-a="gotnow">${esc(t.title)}</a></h2>
         <p>${dateLabel}</p>
-        <div class="current-time">現在時間 ${nowTime} ・ ${dateStr}</div>
+        <div class="current-time"><span class="day-badge">D${dayNum}</span> 現在時間 ${nowTime} ・ ${dateStr}</div>
       </section>
-      <div class="now-next-info">
-        <div class="now-section">
-          <div class="day-badge">D${dayNum}</div>
-          <span class="label">現在</span>
-          <div class="event-name">${nowTxt}</div>
-        </div>
-        <div class="card-divider"></div>
-        <div class="next-section">
-          <div class="next-info">
-            <span class="label">下一步</span>
-            <div class="event-time-name">${nextTxt}</div>
-          </div>
-          ${next?`<a class="nav-circle-btn" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener" aria-label="導航至下一站"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg></a>`:""}
-        </div>
-      </div>
+      <div class="trip-carousel">${cards}</div>
       ${pagRow}
       ${shortRow}
     </div>
   `;
+  const cont=document.querySelector("#t-current .trip-carousel");
+  if(cont&&cont.children.length){const card=cont.children[Math.max(0,Math.min(target,cont.children.length-1))];if(card)cont.scrollLeft=card.offsetLeft-(cont.clientWidth-card.offsetWidth)/2;}
+}
+function realPos(t){
+  const D=getDays(t);if(!D.length)return null;
+  let d,i,off=false,before=false;
+  const k=Math.floor((Date.now()-new Date((t.startDate||"")+"T00:00"))/864e5);
+  if(isNaN(k)||k<0){d=0;i=-1;off=true;before=true;}
+  else if(k>=D.length){d=D.length-1;i=D[d].items.length-1;off=true;}
+  else{d=k;const n=new Date(),cur=n.getHours()*60+n.getMinutes();i=-1;D[d].items.forEach((x,j)=>{if(isT(x.t)){const[h,m]=x.t.split(":");if(+h*60+ +m<=cur)i=j;}});}
+  return{d,i,off,before};
+}
+function realIdx(t){
+  const D=getDays(t);if(!D.length)return 0;
+  const total=D.reduce((s,dd)=>s+((dd.items||[]).length),0);if(!total)return 0;
+  const r=realPos(t);if(!r)return 0;
+  const pre=[];let acc=0;D.forEach(dd=>{pre.push(acc);acc+=(dd.items||[]).length;});
+  const its=D[r.d].items||[];
+  if(r.i>=0&&r.i<its.length)return pre[r.d]+r.i;
+  if(r.i+1<its.length)return pre[r.d]+r.i+1;
+  if(r.before)return 0;
+  return Math.max(0,total-1);
+}
+function scrollToCard(cont,i,instant){
+  const card=cont.children[i];if(!card)return;
+  const left=card.offsetLeft-(cont.clientWidth-card.offsetWidth)/2;
+  if(instant)cont.scrollLeft=left;
+  else if(cont.scrollTo)cont.scrollTo({left,behavior:"smooth"});
+  else cont.scrollLeft=left;
+}
+function curStep(a){
+  const cont=document.querySelector("#t-current .trip-carousel");if(!cont)return;
+  const n=cont.children.length;if(!n)return;
+  if(a==="creset"){const t=T0();const target=t?realIdx(t):0;scrollToCard(cont,Math.max(0,Math.min(target,n-1)),false);return;}
+  const mid=cont.scrollLeft+cont.clientWidth/2;let best=0,bd=1e9;
+  for(let i=0;i<n;i++){const c=cont.children[i];const d=Math.abs((c.offsetLeft+c.offsetWidth/2)-mid);if(d<bd){bd=d;best=i}}
+  let i=best;
+  if(a==="cnext")i=Math.min(i+1,n-1);else i=Math.max(i-1,0);
+  scrollToCard(cont,i,false);
 }
 
 /* 全域函數：頂部導覽互動 */
@@ -451,6 +503,7 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="goyen"){go("yen");return}
  if(a==="accday"){const sec=document.getElementById("dacc-"+v);if(sec){const o=sec.classList.toggle("open");b.setAttribute("aria-expanded",o)}return}
  if(a==="print"){document.body.classList.remove("dr");go("now");{const t0=T0();if(t0&&$("#dayblk"))$("#dayblk").innerHTML=getDays(t0).map((_,n)=>dayHTML(t0,n)).join("")}setTimeout(()=>{try{MiniMap.refresh()}catch(e){}setTimeout(()=>window.print(),350)},150);return}
+ if(a==="cprev"||a==="cnext"||a==="creset"){curStep(a);return}
  if(a==="lvnext"||a==="lvprev"||a==="lvauto"){liveStep(a);return}
  if(a==="sosadd"){$("#sosrows").insertAdjacentHTML("beforeend",sosRow(["","",""]));return}
  if(a==="sosdel"){b.closest(".sosr").remove();return}
@@ -622,7 +675,7 @@ function liveHTML(t){const c=liveCalc(t);if(!c)return'<div class="lvh"><span cla
  <div class="lvrow nx"><small>下一步</small><b>${next?esc((next.t?next.t+"　":"")+next.h):"結束當天行程"}</b>${st?`<span class="lvst">${st}</span>`:""}</div>
  ${next?`<a class="pill lvnav" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener"><i class="ic ic-nav"></i>導航至下一站</a>`:""}
  <div class="lvctl"><button data-a="lvprev">上一個</button><button data-a="lvnext">下一個</button><button data-a="lvauto" ${LIVE.sim?"":"disabled"}>回到即時</button></div>`}
-function refreshLive(){const el=$("#live"),t=T0();if(el&&t)el.innerHTML=liveHTML(t);if(t)renderCurrent(t)}
+function refreshLive(){const el=$("#live"),t=T0();if(el&&t)el.innerHTML=liveHTML(t);if(t&&cur==="current")renderCurrent(t)}
 function liveStep(a){const t=T0();if(!t)return;if(a==="lvauto"){LIVE={sim:false,d:0,i:-1};return refreshLive()}
  const c=liveCalc(t);if(!c)return;let{d,i}=c;const D=c.D;
  if(a==="lvnext"){if(i<D[d].items.length-1)i++;else if(d<D.length-1){d++;i=-1}}else{if(i>-1)i--;else if(d>0){d--;i=D[d].items.length-1}}
