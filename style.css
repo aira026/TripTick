@@ -402,7 +402,6 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
 /* 上方照片區：嚴格 3:4 直式比例、填滿不變形（網址來自編輯模式） */
 .pc-photo{position:relative;width:100%;aspect-ratio:3 / 4;background:linear-gradient(135deg,#f3e2cb,#ffd9a8)}
 .pc-photo img{display:block;width:100%;height:100%;object-fit:cover}
-.pc-photo .pc-flag{position:absolute;inset:0;display:grid;place-items:center;font-size:3.2rem;opacity:.6;pointer-events:none}
 /* 展開時：未被文字遮蔽的上半照片蓋半透明黑色，營造前後景 */
 .pc-shade{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .45s ease;pointer-events:none}
 .pc-item.open .pc-shade{opacity:1}
