@@ -366,8 +366,8 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
 
 /* ===== 歷史行程：橫向滑動明信片列表（Horizontal Scroll / Swipeable List） ===== */
 #l-past{
-  /* 突破 body 的 14px 內距，讓列表左右滿版滑動 */
-  margin:34px -14px 0;
+  /* 突破 body 的 14px 內距，讓列表左右滿版滑動；上方間距上調 2vh，首屏剛好容納一張卡片＋操作按鈕 */
+  margin:calc(34px - 2vh) -14px 0;
   display:flex;
   overflow-x:auto;
   scroll-snap-type:x mandatory;
@@ -464,9 +464,14 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
 #t-past .addfab .pill{position:relative !important;pointer-events:auto;width:56px !important;height:56px !important;min-height:56px !important;padding:0 !important;border-radius:50% !important;background:rgba(255,255,255,0.75) !important;-webkit-backdrop-filter:blur(12px) !important;backdrop-filter:blur(12px) !important;border:1px solid rgba(255,255,255,0.9) !important;color:var(--ink) !important;font-weight:700 !important;box-shadow:0 4px 20px rgba(0,0,0,0.15) !important;cursor:pointer !important;transition:transform .15s,box-shadow .15s !important;display:flex !important;align-items:center !important;justify-content:center !important;overflow:hidden !important;font-size:28px !important;line-height:1 !important}
 #t-past .addfab .pill:active{transform:scale(.92) !important}
 
+/* ===== 長按拖曳排序：拖曳中的卡片浮起，容器暫停磁吸 ===== */
+#l-past.pc-reordering{scroll-snap-type:none;cursor:grabbing}
+#l-past.pc-reordering .pc-item{transition:none}
+.pc-item.pc-dragging{z-index:5;box-shadow:0 18px 40px rgba(0,0,0,.22);will-change:transform}
+
 /* ===== 手機版微調 ===== */
 @media(max-width:560px){
-  #l-past{margin-top:28px;gap:16px;padding:16px}
+  #l-past{margin-top:calc(28px - 2vh);gap:16px;padding:16px}
   .pc-item{--body-h:214px}
   .pc-scroll{padding:6px 16px 4px}
   .pc-country{font-size:1.5rem}

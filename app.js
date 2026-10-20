@@ -296,7 +296,7 @@ async function addPhotos(id,files){const f=[...(files||[])].find(x=>x&&/^image\/
 
 /* ===== 歷史明信片：上方 3:4 照片 + 下方純白文字區（橫向滑動列表卡片） ===== */
 function pcMeta(t){const dateTxt=`${t.startDate||"日期未定"}${t.endDate?" – "+t.endDate.slice(5):""}`;
- const mates=[...new Set(t.members||[])].map(u=>nameOf(t,u)).map(n=>/^[0-9a-zA-Z]{20,}$/.test(n)?"同行者":n);
+ const mates=[...new Set(t.members||[])].map(u=>nameOf(t,u)).map(n=>/^[0-9a-zA-Z]{20,}$/.test(n)?"旅客":n);
  return{dateTxt,mateTxt:mates.length?mates.join("、"):"自行出發"}}
 /* 城市：一趟出國可能去多個城市，取每日行程 city 去重串接 */
 function pcCities(t){const set=[];getDays(t).forEach(d=>{const c=(d.city||"").trim();if(c&&!set.includes(c))set.push(c)});return set.join("、")}
@@ -308,26 +308,63 @@ function pcard(t){const{dateTxt,mateTxt}=pcMeta(t),cities=pcCities(t),img=t.imag
    <div class="pc-scroll">
     <p class="pc-title">${esc(t.title)}</p>
     <h3 class="pc-country">${esc(t.country)||"未知國家"}</h3>
-    <p class="pc-meta">${flagOf(t)} ${esc(dateTxt)}・${nd(t)} 天・同行：${esc(mateTxt)}</p>
+    <p class="pc-meta">${flagOf(t)} ${esc(dateTxt)}<br>${nd(t)} 天<br>旅客：${esc(mateTxt)}</p>
     <div class="pc-note-row"><div class="pc-note"><em>心情札記</em><p>${t.notes?esc(t.notes):"還沒有寫下這趟旅程的心情札記…"}</p></div>${cities?`<span class="pc-cities" title="${esc(cities)}">${esc(cities)}</span>`:""}</div>
    </div>
    <div class="pills pc-act">${me?`<button class="pill" data-a="edit" data-v="${esc(t.id)}"><i class=i-edit></i> 編輯</button>`:""}${t.status==="past"?`<button class="pill gl" data-a="setcur" data-v="${esc(t.id)}">設為當前行程</button>`:""}${t.owner===me?.uid?`<button class="pill gl" data-a="del" data-v="${esc(t.id)}"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg> 刪除</button>`:""}</div>
   </div>
  </article>`}
 
-/* ===== 橫向滑動列表互動：左右滑由容器原生處理；卡片上垂直滑動或點把手 → 展開／收合滿版心情札記 ===== */
+/* ===== 排序：預設依出發日期由左至右；長按拖曳可自訂順序（存 localStorage） ===== */
+const PORD_KEY="tp-past-order";
+function pastOrder(list){const byDate=(a,b)=>String(a.startDate||"9999-99-99").localeCompare(String(b.startDate||"9999-99-99"));
+ let ord=[];try{ord=JSON.parse(localStorage.getItem(PORD_KEY))||[]}catch(e){ord=[]}
+ const map=new Map(list.map(t=>[t.id,t])),out=[];
+ ord.forEach(id=>{const t=map.get(id);if(t){out.push(t);map.delete(id)}}); /* 自訂順序優先 */
+ [...map.values()].sort(byDate).forEach(t=>out.push(t));                  /* 其餘依日期補在後面 */
+ return out}
+function savePastOrder(box){const ids=[...box.querySelectorAll(".pc-item")].map(el=>el.dataset.pid);
+ try{localStorage.setItem(PORD_KEY,JSON.stringify(ids))}catch(e){}}
+
+/* ===== 橫向滑動列表互動：左右滑由容器原生處理；卡片上垂直滑動或點把手 → 展開／收合滿版心情札記；長按 0.5 秒 → 拖曳排序 ===== */
 function pastInit(){const box=$("#l-past");if(!box)return;
  [...box.querySelectorAll(".pc-item")].forEach(bindSwipe)}
 function bindSwipe(el){if(el._sc)return;el._sc=1;
- let x0=0,y0=0,armed=false;
+ const box=$("#l-past");
+ let x0=0,y0=0,armed=false,lp=null,drag=false;
+ const clearLP=()=>{if(lp){clearTimeout(lp);lp=null}};
+ const endDrag=()=>{if(!drag)return;drag=false;
+  el.classList.remove("pc-dragging");el.style.transform="";
+  if(box){box.classList.remove("pc-reordering");savePastOrder(box);toast("已更新排列順序")}};
  el.addEventListener("pointerdown",e=>{if(e.button)return;
   if(e.target.closest("button,a,input,label,select,textarea"))return;
-  armed=true;x0=e.clientX;y0=e.clientY});
- el.addEventListener("pointerup",e=>{if(!armed)return;armed=false;
+  armed=true;drag=false;x0=e.clientX;y0=e.clientY;
+  clearLP();
+  lp=setTimeout(()=>{lp=null;drag=true;armed=false;      /* 長按 0.5s → 進入拖曳排序 */
+   el.classList.add("pc-dragging");if(box)box.classList.add("pc-reordering");
+   try{el.setPointerCapture(e.pointerId)}catch(_){}
+   if(navigator.vibrate)try{navigator.vibrate(12)}catch(_){}
+  },480)});
+ el.addEventListener("touchmove",e=>{if(drag)e.preventDefault()},{passive:false}); /* 拖曳中關閉容器原生捲動 */
+ el.addEventListener("pointermove",e=>{if(drag){
+   el.style.transform=`translate3d(${e.clientX-x0}px,0,0)`;
+   /* 滑過相鄰卡片中線即交換位置 */
+   const er=el.getBoundingClientRect(),em=er.left+er.width/2;
+   for(const s of[...box.querySelectorAll(".pc-item")].filter(c=>c!==el)){
+    const r=s.getBoundingClientRect(),mid=r.left+r.width/2;
+    if(em>mid&&(s.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING)){box.insertBefore(el,s);x0=e.clientX;el.style.transform="";break}
+    if(em<mid&&(el.compareDocumentPosition(s)&Node.DOCUMENT_POSITION_FOLLOWING)){box.insertBefore(s,el);x0=e.clientX;el.style.transform="";break}
+   }
+   return}
+  if(armed&&Math.hypot(e.clientX-x0,e.clientY-y0)>10)clearLP(); /* 未長按就移動 → 取消，交給原生捲動 */
+ });
+ el.addEventListener("pointerup",e=>{clearLP();
+  if(drag){endDrag();return}                                 /* 拖曳結束：存順序 */
+  if(!armed)return;armed=false;
   const dx=e.clientX==null?0:e.clientX-x0,dy=e.clientY==null?0:e.clientY-y0;
-  if(Math.abs(dy)<32||Math.abs(dy)<Math.abs(dx))return;  /* 以垂直滑動為準，水平滑動交給容器 */
-  pcToggle(el,dy<0)});                                     /* 上滑展開、下滑收合 */
- el.addEventListener("pointercancel",()=>{armed=false})}
+  if(Math.abs(dy)<32||Math.abs(dy)<Math.abs(dx))return;      /* 以垂直滑動為準，水平滑動交給容器 */
+  pcToggle(el,dy<0)});                                        /* 上滑展開、下滑收合 */
+ el.addEventListener("pointercancel",()=>{clearLP();if(drag)endDrag();armed=false})}
 function pcToggle(el,open){el.classList.toggle("open",open)}
 /* 把手按鈕：點擊展開／收合 */
 function pcExpToggle(b){const el=b.closest(".pc-item");if(el)pcToggle(el,!el.classList.contains("open"))}
@@ -367,7 +404,7 @@ function render(){const v=visible(),by=s=>v.filter(t=>t.status===s);zm=null;
  $("#stats").innerHTML=`<div class="glass stat"><b>${new Set(real.map(t=>t.countryCode||t.country)).size}</b><small>造訪國家</small></div><div class="glass stat"><b>${real.reduce((s,t)=>s+nd(t),0)}</b><small>總天數</small></div><div class="glass stat"><b>${real.length}</b><small>趟旅行</small></div>`;
  MapView.render(v);if(cur==="map")MapView.refresh();
  const emp='<p class="empty">還沒有旅程，點上方「＋ 新增旅程」開始記錄</p>';
- $("#l-past").innerHTML=by("past").map(tcard).join("")||emp;$("#l-future").innerHTML=by("future").map(tcard).join("")||emp;photoGC();pastInit();renderDrawer();updBar();tick();syncLoc()}
+ $("#l-past").innerHTML=pastOrder(by("past")).map(tcard).join("")||emp;$("#l-future").innerHTML=by("future").map(tcard).join("")||emp;photoGC();pastInit();renderDrawer();updBar();tick();syncLoc()}
 function tick(){const el=$("#cd"),t=visible().find(x=>x.status==="now"&&!x.locked);if(!el||!t||!t.startDate)return;const now=new Date(),st=new Date(t.startDate+"T00:00");
  const al=t.alerts||[];if(now>=st&&!al.length){const dd=Math.floor((now-st)/864e5)+1;el.textContent=dd<=nd(t)?`旅程第 ${dd} 天`:"旅程結束";return}
  if(now<st){el.textContent=`出發倒數 ${Math.ceil((st-now)/864e5)} 天`;return}
