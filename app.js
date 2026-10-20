@@ -123,8 +123,8 @@ function renderCurrent(t){
       <div class="card-meta">
         <span class="day-badge">${esc(dd.k||("D"+(di+1)))}</span>
         ${dd.date?`<span class="card-date">${esc(dd.date)}</span>`:""}
-        ${tag?`<span class="card-tag${isNow?" now":""}">${tag}</span>`:""}
       </div>
+      ${tag?`<span class="label${isNow?" now":""}">${tag}</span>`:""}
       ${it.t?`<div class="card-time">${esc(it.t)}</div>`:""}
       <div class="event-name">${esc(it.h||"")}</div>
       ${it.pos?`<div class="card-desc">${esc(it.pos)}</div>`:""}

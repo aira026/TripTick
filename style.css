@@ -594,10 +594,13 @@ body.pcopen{overflow:hidden}
 /* 行程卡片：水平 Scroll Snap 容器與單卡 */
 .trip-carousel{
   display:flex;
+  align-items:center;
   overflow-x:auto;
   scroll-snap-type:x mandatory;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
+  flex:1 1 auto;
+  min-height:0;
   margin-bottom:20px;
   position:relative
 }
@@ -611,19 +614,13 @@ body.pcopen{overflow:hidden}
   gap:6px;
   min-height:180px;
   padding:18px 16px;
-  border-radius:20px;
-  border:1px solid rgba(255,255,255,.7);
-  background:rgba(255,255,255,.55);
-  -webkit-backdrop-filter:blur(16px) saturate(160%);
-  backdrop-filter:blur(16px) saturate(160%);
-  box-shadow:0 10px 26px rgba(17,17,17,.08)
+  background:transparent
 }
-.trip-card.is-now{border-color:rgba(255,122,0,.55)}
+.trip-card .label{font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
 .trip-card .card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .trip-card .card-meta .day-badge{align-self:center}
 .trip-card .card-date{font-size:.72rem;color:var(--mut)}
-.trip-card .card-tag{font-size:.7rem;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:999px;background:rgba(17,17,17,.05);color:var(--mut)}
-.trip-card .card-tag.now{background:rgba(255,122,0,.12);color:#FF7A00}
+.trip-card.is-now .label{color:#FF7A00}
 .trip-card .card-time{font-size:.85rem;font-weight:600;color:#FF7A00;letter-spacing:.02em}
 .trip-card .event-name{font-size:1.35rem;font-weight:700;color:var(--ink);line-height:1.35;word-break:break-all}
 .trip-card.is-next .event-name{font-size:1.15rem;color:var(--tx)}
