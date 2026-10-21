@@ -304,9 +304,9 @@ async function addPhotos(id,files){const f=[...(files||[])].find(x=>x&&/^image\/
 /* 狀態僅暫存於當前視窗記憶體（Blob URL），關閉彈窗即撤銷釋放，絕不寫入 localStorage */
 const STORY = { trip: null, bg: null, polis: [], revokes: [] };
 
-/* 分享圖示 SVG：線條與圓角風格與漢堡選單 SVG 保持一致 */
+/* 分享圖示 SVG：與「漢堡選單 -> 資料與備份」的 .ic-up 圖示 100% 一致 */
 function storySvg(){
-  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 1H5a2 2 0 0 0-2 2v4h14V3a2 2 0 0 0-2-2zM1 8h14M18 8l2 2-2 2"/></svg>`;
+  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>`;
 }
 
 /* 前端 Canvas 壓縮：限制寬度 1000px 以內，品質自動遞減直至圖片 ≤ 500KB，輸出 Blob URL，僅記憶體暫存 */
@@ -365,6 +365,9 @@ function openStory(t){
   const from = (t.spots && t.spots[0] && t.spots[0].city) || "出發地";
   const to = t.country || "未知國";
   const date = `${t.startDate || ""}${t.endDate ? " \u2212 " + t.endDate.slice(5) : ""}`;
+  const members = t.members || [];
+  const passenger = members.length ? (t.memberNames && t.memberNames[members[0]]) || members[0] : "旅客";
+
   modal(`<div class="story-modal">
     <div class="story-head"><h3>限時動態分享圖</h3><p class="story-meta">${esc(t.title)}</p></div>
     <div class="story-stage">
@@ -372,24 +375,21 @@ function openStory(t){
         <!-- Bottom Layer：背景大圖 -->
         <div class="story-bg" id="story-bg"></div>
 
-        <!-- Middle Layer：拍立得照片（置於信封之後） -->
+        <!-- Middle Layer 1：拍立得照片層 -->
         <div class="story-polis" id="story-polis"></div>
 
-        <!-- Middle Layer：機票（與照片同層） -->
+        <!-- Middle Layer 3：機票層（air tickets.png + 百分比定位動態文字） -->
         <div class="story-ticket" id="story-ticket">
-          <div class="story-ticket-inner">
-            <div class="tk-overlay">
-              <div class="tk-row"><span class="tk-lab">FROM</span><span class="tk-val">${esc(from)}</span></div>
-              <div class="tk-row"><span class="tk-lab">TO</span><span class="tk-val">${esc(to)}</span></div>
-              <div class="tk-row"><span class="tk-lab">DATE</span><span class="tk-val">${esc(date)}</span></div>
-            </div>
-          </div>
+          <div class="tk-field tk-from" style="left:20%;top:34%;">${esc(from)}</div>
+          <div class="tk-field tk-dest" style="left:50%;top:34%;">${esc(to)}</div>
+          <div class="tk-field tk-date" style="left:20%;top:52%;">${esc(date)}</div>
+          <div class="tk-field tk-pass" style="left:50%;top:52%;">${esc(passenger)}</div>
         </div>
 
-        <!-- Top Layer：去背信封圖 envelope.png（覆蓋在照片與相紙框之上） -->
+        <!-- Top Layer：去背信封圖 envelope.png（z-index 最高） -->
         <div class="story-envelope" id="story-envelope"></div>
 
-        <!-- 郵票裝飾（最上方） -->
+        <!-- 郵票裝飾（最上方，z-index 15） -->
         <div class="story-stamps" id="story-stamps">
           <div class="story-stamp" style="left:26px;top:30px;transform:rotate(-6deg)">POSTED</div>
           <div class="story-stamp" style="right:26px;top:160px;transform:rotate(8deg)">AIR MAIL</div>

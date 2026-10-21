@@ -258,13 +258,13 @@ body.ro .topact{display:none!important}
 .story-bg{position:absolute;inset:0;width:100%;height:100%;background-size:cover;background-position:center;background-repeat:no-repeat;z-index:0}
 .story-bg.story-empty{background:linear-gradient(135deg,#f3f0ea,#e9e4d7);display:grid;place-items:center;color:#b9a78c;font-size:1rem;letter-spacing:.2em;text-transform:uppercase}
 
-/* Middle Layer：拍立得照片容器（置於信封之後，z-index 10） */
+/* Middle Layer 1：拍立得照片容器（置於信封之後，z-index 10） */
 .story-polis{position:absolute;left:50%;top:0;transform:translateX(-50%);width:750px;height:1334px;z-index:10;pointer-events:none;overflow:visible}
 
 /* 個別拍立得照片：微隨機旋轉、正方形比例、不變形 */
 .story-p{position:absolute;cursor:pointer;transform:rotate(var(--r,0deg));z-index:11;will-change:transform}
 .story-pinner{position:relative}
-.story-panim{animation:storyslidein .65s cubic-bezier(.18,.89,.32,1.28) both}   /* 從上方滑進，物理慣性 */
+.story-panim{animation:storyslidein .65s cubic-bezier(.18,.89,.32,1.28) both}
 
 /* 拍立得照片本體：aspect-ratio 1/1 + object-fit: cover，絕不變形 */
 .story-pframe{position:relative;width:150px;height:150px;aspect-ratio:1/1;box-shadow:0 14px 34px rgba(0,0,0,.32)}
@@ -273,15 +273,16 @@ body.ro .topact{display:none!important}
 /* Upper-Middle Layer：去背拍立得相紙框 Polaroid.png（覆蓋在照片上方，z-index 12） */
 .story-polaroid-frame{position:absolute;left:-14px;top:-14px;width:178px;height:232px;object-fit:contain;pointer-events:none;z-index:12;filter:drop-shadow(0 6px 12px rgba(0,0,0,.18))}
 
-/* 機票：Middle Layer 與照片同層，微旋轉 -5deg */
-.story-ticket{position:absolute;left:50%;top:300px;transform:translateX(-50%) rotate(-5deg);width:700px;height:194px;/* 700 × 260/937 ≈ 194 */background-image:url('air tickets.png');background-size:contain;background-repeat:no-repeat;background-position:center;z-index:11;pointer-events:none;overflow:visible}
-.story-ticket-inner{position:relative;animation:storyslidein .65s cubic-bezier(.18,.89,.32,1.28) both;animation-delay:.15s}
+/* Middle Layer 3：機票層（air tickets.png，position:relative 供百分比定位文字） */
+.story-ticket{position:absolute;left:50%;top:300px;transform:translateX(-50%) rotate(-5deg);width:700px;height:194px;/* 700 × 260/937 ≈ 194 */background-image:url('air tickets.png');background-size:contain;background-repeat:no-repeat;background-position:center;z-index:13;pointer-events:none;overflow:visible}
+.story-ticket{animation:storyslidein .65s cubic-bezier(.18,.89,.32,1.28) both;animation-delay:.15s}
 
-/* 機票上的文字（FROM / TO / DATE）疊印在 air tickets.png 上方 */
-.tk-overlay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:560px;pointer-events:none;z-index:13}
-.tk-row{display:flex;align-items:center;padding:6px 0;font-family:"Courier New",Courier,monospace;font-size:1.02rem;letter-spacing:.2px;color:#111}
-.tk-lab{width:72px;color:#555;font-size:.72rem;letter-spacing:.3px;text-transform:uppercase;opacity:.85}
-.tk-val{flex:1}
+/* 機票動態文字：百分比絕對定位，鎖定 air tickets.png 空白欄位 */
+.tk-field{position:absolute;pointer-events:none;font-family:"Courier New",Courier,monospace;letter-spacing:.2px;color:#111;text-transform:uppercase;font-weight:600;text-shadow:0 1px 2px rgba(255,255,255,.8)}
+.tk-from{font-size:1.05rem}
+.tk-dest{font-size:1.05rem}
+.tk-date{font-size:1.05rem}
+.tk-pass{font-size:1.05rem}
 
 /* Top Layer：去背信封圖 envelope.png（z-index 最高，覆蓋在照片與相紙框之上） */
 .story-envelope{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);width:700px;height:789px;/* 700 × 1333/1180 ≈ 789 */background-image:url('envelope.png');background-size:contain;background-repeat:no-repeat;background-position:center bottom;z-index:14;pointer-events:none}
@@ -317,6 +318,7 @@ body.ro .topact{display:none!important}
 
 /* 列印時隱藏分享模組 */
 @media print{.story-modal{display:none!important}}
+
 /* ===== 列印 / PDF 懶人包 ===== */
 @media print{
  @page{margin:12mm}
