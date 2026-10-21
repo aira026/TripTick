@@ -423,7 +423,6 @@ function openStory(t){
   renderStory();
   storyFit();
 }
-}
 
 /* 視窗大小變更時重新等比例縮放 */
 addEventListener("resize", storyFit);
