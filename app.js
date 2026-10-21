@@ -358,13 +358,15 @@ function openStory(t){
     <div class="story-stage">
       <div class="story-wrap" id="story-wrap">
         <div class="story-bg" id="story-bg"></div>
-        <div class="story-envelope" id="story-envelope"><div class="story-mouth"></div><div class="story-flap"></div></div>
-        <div class="story-polis" id="story-polis"></div>
+        <div class="story-envelope" id="story-envelope"></div>
         <div class="story-ticket" id="story-ticket">
-          <div class="tk-row"><span class="tk-lab">FROM</span><span class="tk-val">${esc(from)}</span></div>
-          <div class="tk-row"><span class="tk-lab">TO</span><span class="tk-val">${esc(to)}</span></div>
-          <div class="tk-row"><span class="tk-lab">DATE</span><span class="tk-val">${esc(date)}</span></div>
+          <div class="tk-overlay">
+            <div class="tk-row"><span class="tk-lab">FROM</span><span class="tk-val">${esc(from)}</span></div>
+            <div class="tk-row"><span class="tk-lab">TO</span><span class="tk-val">${esc(to)}</span></div>
+            <div class="tk-row"><span class="tk-lab">DATE</span><span class="tk-val">${esc(date)}</span></div>
+          </div>
         </div>
+        <div class="story-polis" id="story-polis"></div>
         <div class="story-stamps" id="story-stamps">
           <div class="story-stamp" style="left:26px;top:30px;transform:rotate(-6deg)">POSTED</div>
           <div class="story-stamp" style="right:26px;top:160px;transform:rotate(8deg)">AIR MAIL</div>
@@ -425,11 +427,12 @@ function renderStory(){
 
   let html = "";
   STORY.polis.forEach((u, i) => {
-    const rot = storyRandRot();
-    const left = 320 + i * 52;   // 錯開於信封開口（約 x=320~620）
-    const top = 430 + i * 9;     // 疊在信封開口處（約 y=430~495）
+    const rot = storyRandRot();          // 已含 "deg"
+    // 錯開於信封口（夾層），從信封裡抽出的感覺；左右錯開、微向下疊疊
+    const left = -55 + i * 92;
+    const top = 8 + i * 11;
     const delay = (i * 0.08).toFixed(2) + "s";
-    html += `<div class="story-p" style="left:${left}px;top:${top}px;z-index:${10 + i};--r:${rot}">
+    html += `<div class="story-p" style="left:${left}px;top:${top}px;z-index:${12 + i};--r:${rot}">
       <div class="story-pframe story-panim" style="animation-delay:${delay}"><img src="${u}" class="story-pimg" loading="eager" onload="this.closest('.story-pframe')?.classList.add('p-loaded')"></div>
     </div>`;
   });

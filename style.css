@@ -237,7 +237,7 @@ body.ro .topact{display:none!important}
 .chev{width:10px;height:10px;border-right:2px solid #8a8178;border-bottom:2px solid #8a8178;transform:rotate(45deg);transition:transform .25s;margin:0 4px 4px 2px}
 .dayacc.open .chev{transform:rotate(-135deg);margin-bottom:-2px}
 .daybody{display:none;padding-top:8px}.dayacc.open .daybody{display:block;animation:fd .25s}
-/* ===== IG Story：復古信封拼貼 9:16 分享圖 ===== */
+/* ===== IG Story：復古信封拼貼 9:16 分享圖（實體素材版） ===== */
 /* 分享按鈕（歷史卡片）：線條與圓角與漢堡選單 SVG 一致 */
 .story-share{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 10px;border:0;border-radius:999px;background:rgba(22,24,29,.07);color:var(--ink);font-size:.8rem;font-weight:600;cursor:pointer;margin-left:6px}
 .story-share:active{transform:scale(.96)}
@@ -257,30 +257,63 @@ body.ro .topact{display:none!important}
 .story-bg{position:absolute;inset:0;width:100%;height:100%;background-size:cover;background-position:center;background-repeat:no-repeat}
 .story-bg.story-empty{background:linear-gradient(135deg,#f3f0ea,#e9e4d7);display:grid;place-items:center;color:#b9a78c;font-size:1rem;letter-spacing:.2em;text-transform:uppercase}
 
-/* 復古信封：居中，擋在拍立得與機票之後 */
-.story-envelope{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:640px;height:430px;background:#faf6ef;border:1.5px solid #e4dcc8;border-radius:22px;box-shadow:0 14px 40px rgba(0,0,0,.18);z-index:10}
-.story-mouth{position:absolute;top:-14px;left:50%;transform:translatex(-50%);width:300px;height:30px;background:#faf6ef;border-bottom:1.5px solid #e4dcc8;border-radius:0 0 14px 14px;z-index:12}
-.story-flap{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:20px;background:rgba(228,220,200,.18);pointer-events:none;z-index:14}
+/* 信封實體容器：以 envelope.png 為主圖，置於畫面下方，拍立得與機票疊在其「夾層」口上 */
+.story-envelope{
+  position:absolute;
+  left:50%; bottom:52px;
+  transform:translateX(-50%);
+  width:690px;
+  height:780px;                 /* 690 × 1333/1180 ≈ 780 */
+  background-image:url('envelope.png');
+  background-size:contain;
+  background-repeat:no-repeat;
+  background-position:center bottom;
+  z-index:10;
+  pointer-events:none;
+}
 
-/* 拍立得小圖：錯落疊放、微隨機旋轉、立體陰影，插在信封口中 */
-.story-polis{position:absolute;inset:0;z-index:11}
-.story-p{position:absolute;cursor:pointer;transform:rotate(var(--r,0deg))}
-.story-panim{animation:storyslide .55s ease-out both}
-.story-pframe{position:relative;width:150px;height:150px;background:#fff;border:6px solid #fff;border-bottom:24px solid #fff;border-radius:4px;box-shadow:0 10px 28px rgba(0,0,0,.22);overflow:hidden}
+/* 夾層容器：拍立得與機票置於此，從信封口露出 */
+.story-polis{
+  position:absolute;
+  left:50%; top:430px;
+  transform:translateX(-50%);
+  width:640px;height:220px;
+  z-index:11;
+  pointer-events:none;
+  overflow:visible;
+}
+
+/* 拍立得小圖：微隨機旋轉、立體陰影，從信封口抽出 */
+.story-p{position:absolute;cursor:pointer;transform:rotate(var(--r,0deg));z-index:12}
+.story-panim{animation:storyfade .55s ease-out both}            /* 僅淡入，不碰 rotation，避免與 .story-p 衝突 */
+.story-pframe{position:relative;width:150px;height:150px;background:#fff;border:7px solid #fff;border-bottom:26px solid #fff;border-radius:4px;box-shadow:0 12px 30px rgba(0,0,0,.30);overflow:hidden}
 .story-pframe .p-loaded{filter:contrast(1.02) saturate(1.05)}
 .story-pimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-.story-pcap{position:absolute;bottom:-22px;left:6px;right:6px;height:18px;background:#fff;border-bottom:2px solid #e4dcc8;z-index:2}
 
-/* 復古機票：FROM / TO / DATE */
-.story-ticket{position:absolute;left:50%;top:78%;transform:translate(-50%,-50%);width:560px;height:150px;background:#fff;border:2px solid #111;border-radius:6px;box-shadow:0 12px 34px rgba(0,0,0,.22);z-index:12;display:flex;flex-direction:column}
-.tk-row{flex:1;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid #ddd;font-family:"Courier New",Courier,monospace;font-size:1.05rem;letter-spacing:.25px;color:#111}
-.tk-row:last-child{border-bottom:none}
-.tk-lab{width:80px;color:#666;font-size:.78rem;letter-spacing:.4px;text-transform:uppercase;opacity:.8}
+/* 機票容器：以 air tickets.png 為主圖，疊在信封夾層中，照片蓋在其上方 */
+.story-ticket{
+  position:absolute;
+  left:50%; top:330px;
+  transform:translateX(-50%) rotate(-5deg);
+  width:640px;height:183px;      /* 640 × 272/950 ≈ 183 */
+  background-image:url('air tickets.png');
+  background-size:contain;
+  background-repeat:no-repeat;
+  background-position:center;
+  z-index:11;                   /* 同層夾層，低於拍立得，由照片蓋住部分 */
+  pointer-events:none;
+  overflow:visible;
+}
+
+/* 機票上的文字（FROM / TO / DATE）疊印在 air tickets.png 上方 */
+.tk-overlay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:560px;pointer-events:none;z-index:13}
+.tk-row{display:flex;align-items:center;padding:6px 0;font-family:"Courier New",Courier,monospace;font-size:1.02rem;letter-spacing:.2px;color:#111}
+.tk-lab{width:72px;color:#555;font-size:.72rem;letter-spacing:.3px;text-transform:uppercase;opacity:.85}
 .tk-val{flex:1}
 
-/* 郵票裝飾 */
-.story-stamps{position:absolute;inset:0;z-index:13;pointer-events:none}
-.story-stamp{position:absolute;width:46px;height:56px;border:3px double #b9a78c;border-radius:4px;background:rgba(255,255,255,.6);color:#8a7a60;font-size:.72rem;font-weight:700;letter-spacing:.3px;display:grid;place-items:center;text-transform:uppercase;box-shadow:0 4px 10px rgba(0,0,0,.12)}
+/* 郵票裝飾：貼在信封實體圖上方 */
+.story-stamps{position:absolute;inset:0;z-index:14;pointer-events:none}
+.story-stamp{position:absolute;width:46px;height:56px;border:3px double #b9a78c;border-radius:4px;background:rgba(255,255,255,.65);color:#8a7a60;font-size:.72rem;font-weight:700;letter-spacing:.3px;display:grid;place-items:center;text-transform:uppercase;box-shadow:0 4px 10px rgba(0,0,0,.12)}
 
 /* 上傳控制列 */
 .story-upload{display:flex;gap:8px;flex-wrap:wrap}
@@ -296,11 +329,17 @@ body.ro .topact{display:none!important}
 .story-loading::after{content:"";position:absolute;inset:0;border:3px solid rgba(17,17,17,.2);border-top-color:var(--ink);border-radius:50%;animation:storyspin .7s linear infinite}
 @keyframes storyspin{to{transform:rotate(360deg)}}
 
-/* 進場動畫：拍立得與機票從信封上方滑入（.story-panim 掛在拍立得內層，避免與 rotation 衝突） */
+/* 進場動畫：機票從信封口滑入（保留 translateX(-50%) 與 rotate(-5deg) 與基礎樣式一致） */
 .story-ticket{animation:storyslide .55s ease-out both;animation-delay:.12s}
 @keyframes storyslide{
-  from{opacity:0;transform:translatey(-40px)}
-  to{opacity:1;transform:none}
+  from{opacity:0;transform:translateX(-50%) translatey(-40px) rotate(-5deg)}
+  to{opacity:1;transform:translateX(-50%) rotate(-5deg)}
+}
+
+/* 拍立得僅淡入進場，rotation 由 .story-p 的 --r 控制，不干擾 */
+@keyframes storyfade{
+  from{opacity:0}
+  to{opacity:1}
 }
 
 /* 列印時隱藏分享模組 */
