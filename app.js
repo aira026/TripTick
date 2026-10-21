@@ -295,7 +295,7 @@ async function addPhotos(id,files){const f=[...(files||[])].find(x=>x&&/^image\/
  const t=TRIPS.find(y=>y.id===id);
  if(t&&db&&me){ /* 雲端為主：寫入行程文件 image 欄位，換瀏覽器／清瀏覽資料都不會消失 */
   const ok=await updateDoc(tdoc(t),ser({image:d})).then(()=>true).catch(e=>{console.error("[photo] 雲端寫入失敗",e);return false});
-  if(ok){setPhoto(id,"");render();toast("照片已更新");return}
+  if(ok){t.image=d;setPhoto(id,"");render();toast("照片已更新");return} /* 同步本地物件，讓前台立即顯示 */
   toast("雲端同步失敗，先存到本機，連線後再試一次");
  }
  if(setPhoto(id,d)){render();toast("照片已更新")}}
@@ -330,6 +330,12 @@ function pastOrder(list){const byDate=(a,b)=>String(a.startDate||"9999-99-99").l
  [...map.values()].sort(byDate).forEach(t=>out.push(t));                  /* 其餘依日期補在後面 */
  return out}
 function savePastOrder(box){const ids=[...box.querySelectorAll(".pc-item")].map(el=>el.dataset.pid);
+ try{localStorage.setItem(PORD_KEY,JSON.stringify(ids))}catch(e){}}
+/* 編輯彈窗用：目前顯示順序中的位置（1 起算）；寫入後立即生效並持久化 */
+function pastPosOf(id){const ids=pastOrder(visible().filter(t=>t.status==="past")).map(t=>t.id);return ids.indexOf(id)+1}
+function setPastPos(id,pos){const ids=pastOrder(visible().filter(t=>t.status==="past")).map(t=>t.id).filter(x=>x!==id);
+ const p=Math.max(1,Math.min(ids.length+1,pos||ids.length+1));
+ ids.splice(p-1,0,id);
  try{localStorage.setItem(PORD_KEY,JSON.stringify(ids))}catch(e){}}
 
 /* ===== 橫向滑動列表互動：左右滑由容器原生處理；卡片上垂直滑動或點把手 → 展開／收合滿版心情札記；長按 0.5 秒 → 拖曳排序 ===== */
@@ -382,9 +388,10 @@ function form(st,id){const t0=TRIPS.find(x=>x.id===id),t=t0?{...t0,status:status
  <label>國家<input id="f-country" list="cl" value="${esc(t.country)}" placeholder="例如：泰國" required></label><datalist id="cl">${Object.keys(FL).map(k=>`<option value="${k}">`).join("")}</datalist>
  <div class="two"><label>出發日<input id="f-s" type="date" value="${esc(t.startDate)}"></label><label>回程日<input id="f-e" type="date" value="${esc(t.endDate)}"></label></div>
  <label>類型<select id="f-st"><option value="now" ${t.status==="now"?"selected":""}>當前旅程</option><option value="past" ${t.status==="past"?"selected":""}>歷史旅程</option><option value="future" ${t.status==="future"?"selected":""}>未來清單</option></select></label>
+ ${id&&t.status==="past"?`<label>排列順序（歷史列表由左至右）<input id="f-pos" type="number" inputmode="numeric" min="1" step="1" value="${pastPosOf(id)}"><span class="meta">1 = 最左邊。也可在列表長按卡片 0.5 秒直接拖曳排序。</span></label>`:""}
  ${id?`<label>照片（上傳新照片將自動取代舊照片）<span class="pc-up">從相簿選擇<input class="pc-file" type="file" accept="image/*" data-ph="${esc(id)}"></span></label>`:`<label>照片<span class="meta">先按「儲存」建立行程，再到歷史明信片上傳照片。</span></label>`}
  <label>備註<textarea id="f-note" rows="3">${esc(t.notes)}</textarea></label>
- <label>照片網址<input id="f-image" type="text" value="${esc(t.image||"")}" placeholder="貼上圖片網址（如 Google 雲端公開圖片連結）"></label>
+ <label>照片網址<input id="f-image" type="text" value="${esc(/^https?:\/\//.test(t.image||"")?t.image:"")}" placeholder="貼上圖片網址；留空則保留已上傳的照片"></label>
  <details><summary>進階：座標（留空會自動查詢）</summary><div class="two"><label>緯度<input id="f-lat" type="number" step="any" value="${sp.lat??""}"></label><label>經度<input id="f-lng" type="number" step="any" value="${sp.lng??""}"></label></div></details>
  <div class="pills"><button class="pill" data-a="save">儲存</button></div></div>`)}
 async function geo(q){try{const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q));const j=await r.json();return j[0]?[+j[0].lat,+j[0].lon]:null}catch(e){return null}}
@@ -398,9 +405,11 @@ async function saveForm(){if(!me)return toast("請先登入");
  if(!isNaN(lat)&&!isNaN(lng)){if(spots.length&&spots[0].lat===lat&&spots[0].lng===lng){}else if(spots.length)spots[0]={...spots[0],lat,lng};else spots.push({name:place,lat,lng,day:1})}
  else if(!spots.length){toast("查詢座標中…");const g=await geo(place+", "+country);if(g)spots.push({name:place,lat:g[0],lng:g[1],day:1});else toast("找不到座標，可稍後編輯")}
  const s=v("e")&&v("s")?v("s"):v("s"),e=v("e"),nDays=s&&e?Math.max(1,Math.round((new Date(e)-new Date(s))/864e5)+1):(old?.nDays||1);
- const base={title:place,country,countryCode:FL[country]||"",startDate:s,endDate:e,image:v("image"),notes:v("note"),nDays,spots},st=v("st");
+ const base={title:place,country,countryCode:FL[country]||"",startDate:s,endDate:e,image:v("image")||old?.image||"",notes:v("note"),nDays,spots},st=v("st"); /* 網址留空 → 保留已上傳的照片，避免被覆蓋成空白 */
  try{if(old){await patch(old,base);if(st==="now")await archiveNow(old.id);await setSt(old,st)}
  else{if(st==="now")await archiveNow("");const ref=doc(collection(db,"trips"));await setDoc(ref,{...clean({...base,days:[],booking:[],expenses:[],currency:CUR[country]||"TWD",diets:{},ext:EXT0,owner:me.uid,members:[me.uid],memberNames:{[me.uid]:me.displayName||"我"},st:{[me.uid]:st}}),createdAt:serverTimestamp()})}
+ /* 排列順序：編輯彈窗的數字欄位（僅歷史旅程），寫入 localStorage 並立即重排 */
+ const posEl=$("#f-pos");if(old&&posEl&&st==="past"){const p=parseInt(posEl.value,10);if(!isNaN(p)&&p>0){setPastPos(old.id,p);render()}}
  $("#modal").classList.remove("on");toast("已儲存")}catch(err){toast("儲存失敗："+(err.code||err.message))}}
 
 function render(){const v=visible(),by=s=>v.filter(t=>t.status===s);zm=null;
