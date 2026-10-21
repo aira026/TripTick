@@ -309,27 +309,39 @@ function storySvg(){
   return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 1H5a2 2 0 0 0-2 2v4h14V3a2 2 0 0 0-2-2zM1 8h14M18 8l2 2-2 2"/></svg>`;
 }
 
-/* 前端 Canvas 壓縮：限制寬度 1000px 以內，輸出 Blob URL，僅記憶體暫存 */
-function compressToBlob(file, maxWidth = 1000){
-  return new Promise(res => {
+/* 前端 Canvas 壓縮：限制寬度 1000px 以內，品質自動遞減直至圖片 ≤ 500KB，輸出 Blob URL，僅記憶體暫存 */
+async function compressToBlob(file, maxWidth = 1000, maxSizeKB = 500){
+  const arrayBuffer = await new Promise((res, rej) => {
     const fr = new FileReader();
-    fr.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        let w = img.width, h = img.height;
-        if (w > maxWidth){ h = Math.round(h * maxWidth / w); w = maxWidth; }
-        const c = document.createElement("canvas");
-        c.width = w; c.height = h;
-        const g = c.getContext("2d");
-        g.drawImage(img, 0, 0, w, h);
-        c.toBlob(b => res(b ? URL.createObjectURL(b) : null), "image/jpeg", 0.88);
-      };
-      img.onerror = () => res(null);
-      img.src = fr.result;
-    };
-    fr.onerror = () => res(null);
+    fr.onload = () => res(fr.result);
+    fr.onerror = () => rej(new Error("read failed"));
     fr.readAsArrayBuffer(file);
   });
+
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error("img load failed"));
+    i.src = URL.createObjectURL(new Blob([arrayBuffer]));
+  });
+
+  let w = img.width, h = img.height;
+  if (w > maxWidth){ h = Math.round(h * maxWidth / w); w = maxWidth; }
+
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const g = c.getContext("2d");
+  g.drawImage(img, 0, 0, w, h);
+
+  let quality = 0.92;
+  let blob = null;
+  while (quality > 0.35) {
+    blob = await new Promise(res => c.toBlob(res, "image/jpeg", quality));
+    if (blob.size <= maxSizeKB * 1024) break;
+    quality -= 0.08;
+  }
+  if (!blob) blob = await new Promise(res => c.toBlob(res, "image/jpeg", quality));
+  return URL.createObjectURL(blob);
 }
 
 function storyClear(){
@@ -357,26 +369,52 @@ function openStory(t){
     <div class="story-head"><h3>限時動態分享圖</h3><p class="story-meta">${esc(t.title)}</p></div>
     <div class="story-stage">
       <div class="story-wrap" id="story-wrap">
+        <!-- Bottom Layer：背景大圖 -->
         <div class="story-bg" id="story-bg"></div>
-        <div class="story-envelope" id="story-envelope"></div>
+
+        <!-- Middle Layer：拍立得照片（置於信封之後） -->
+        <div class="story-polis" id="story-polis"></div>
+
+        <!-- Middle Layer：機票（與照片同層） -->
         <div class="story-ticket" id="story-ticket">
-          <div class="tk-overlay">
-            <div class="tk-row"><span class="tk-lab">FROM</span><span class="tk-val">${esc(from)}</span></div>
-            <div class="tk-row"><span class="tk-lab">TO</span><span class="tk-val">${esc(to)}</span></div>
-            <div class="tk-row"><span class="tk-lab">DATE</span><span class="tk-val">${esc(date)}</span></div>
+          <div class="story-ticket-inner">
+            <div class="tk-overlay">
+              <div class="tk-row"><span class="tk-lab">FROM</span><span class="tk-val">${esc(from)}</span></div>
+              <div class="tk-row"><span class="tk-lab">TO</span><span class="tk-val">${esc(to)}</span></div>
+              <div class="tk-row"><span class="tk-lab">DATE</span><span class="tk-val">${esc(date)}</span></div>
+            </div>
           </div>
         </div>
-        <div class="story-polis" id="story-polis"></div>
+
+        <!-- Top Layer：去背信封圖 envelope.png（覆蓋在照片與相紙框之上） -->
+        <div class="story-envelope" id="story-envelope"></div>
+
+        <!-- 郵票裝飾（最上方） -->
         <div class="story-stamps" id="story-stamps">
           <div class="story-stamp" style="left:26px;top:30px;transform:rotate(-6deg)">POSTED</div>
           <div class="story-stamp" style="right:26px;top:160px;transform:rotate(8deg)">AIR MAIL</div>
         </div>
       </div>
     </div>
+
+    <!-- 上傳區塊：明確分為背景與拍立得兩區 -->
     <div class="story-upload">
-      <label class="story-up">背景大圖（1 張）<input type="file" accept="image/*" class="story-file" data-st="bg"></label>
-      <label class="story-up">拍立得照片（1~5 張）<input type="file" accept="image/*" class="story-file" data-st="pol" multiple></label>
+      <div class="story-upload-section">
+        <div class="story-upload-section-title">【背景大圖上傳區】</div>
+        <div class="story-upload-row">
+          <label class="story-up">選擇 1 張背景大圖<input type="file" accept="image/*" class="story-file" data-st="bg"></label>
+        </div>
+        <div class="story-upload-hint">建議：風景、建築或紀念照，填滿 9:16 畫布</div>
+      </div>
+      <div class="story-upload-section">
+        <div class="story-upload-section-title">【拍立得小圖上傳區】</div>
+        <div class="story-upload-row">
+          <label class="story-up">選擇 1~5 張拍立得照片<input type="file" accept="image/*" class="story-file" data-st="pol" multiple></label>
+        </div>
+        <div class="story-upload-hint">最多 5 張，自動壓縮 ≤500KB 並塞進拍立得相紙</div>
+      </div>
     </div>
+
     <div class="story-foot">
       <button class="pill gl" data-a="storydl" id="storydl">下載分享圖</button>
     </div>
@@ -384,6 +422,7 @@ function openStory(t){
   setupStoryInputs();
   renderStory();
   storyFit();
+}
 }
 
 /* 視窗大小變更時重新等比例縮放 */
@@ -428,12 +467,19 @@ function renderStory(){
   let html = "";
   STORY.polis.forEach((u, i) => {
     const rot = storyRandRot();          // 已含 "deg"
-    // 錯開於信封口（夾層），從信封裡抽出的感覺；左右錯開、微向下疊疊
-    const left = -55 + i * 92;
-    const top = 8 + i * 11;
-    const delay = (i * 0.08).toFixed(2) + "s";
-    html += `<div class="story-p" style="left:${left}px;top:${top}px;z-index:${12 + i};--r:${rot}">
-      <div class="story-pframe story-panim" style="animation-delay:${delay}"><img src="${u}" class="story-pimg" loading="eager" onload="this.closest('.story-pframe')?.classList.add('p-loaded')"></div>
+    // 定位於信封口（夾層），下半部插在信封內（被 envelope.png 擋住），上半部露出
+    // envelope 頂部約在 canvas y≈505，照片 150px 高，從 y≈430 開始，約半數被遮擋
+    const left = -30 + i * 155;
+    const top = 430 + i * 12;
+    const delay = (i * 0.10).toFixed(2) + "s";
+    html += `<div class="story-p" style="left:${left}px;top:${top}px;z-index:${11 + i};--r:${rot}">
+      <div class="story-pinner story-panim" style="animation-delay:${delay}">
+        <div class="story-pframe">
+          <img src="${u}" class="story-pimg" loading="eager" onload="this.closest('.story-pframe')?.classList.add('p-loaded')">
+          <!-- 去背拍立得相紙框，覆蓋在照片上方，中心透明讓照片露出 -->
+          <img src="Polaroid.png" class="story-polaroid-frame" loading="eager">
+        </div>
+      </div>
     </div>`;
   });
   polis.innerHTML = html;
