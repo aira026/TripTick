@@ -300,6 +300,184 @@ async function addPhotos(id,files){const f=[...(files||[])].find(x=>x&&/^image\/
  }
  if(setPhoto(id,d)){render();toast("照片已更新")}}
 
+/* ===== IG Story：復古信封拼貼 9:16 分享圖（歷史旅程） ===== */
+/* 狀態僅暫存於當前視窗記憶體（Blob URL），關閉彈窗即撤銷釋放，絕不寫入 localStorage */
+const STORY = { trip: null, bg: null, polis: [], revokes: [] };
+
+/* 分享圖示 SVG：線條與圓角風格與漢堡選單 SVG 保持一致 */
+function storySvg(){
+  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 1H5a2 2 0 0 0-2 2v4h14V3a2 2 0 0 0-2-2zM1 8h14M18 8l2 2-2 2"/></svg>`;
+}
+
+/* 前端 Canvas 壓縮：限制寬度 1000px 以內，輸出 Blob URL，僅記憶體暫存 */
+function compressToBlob(file, maxWidth = 1000){
+  return new Promise(res => {
+    const fr = new FileReader();
+    fr.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxWidth){ h = Math.round(h * maxWidth / w); w = maxWidth; }
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        const g = c.getContext("2d");
+        g.drawImage(img, 0, 0, w, h);
+        c.toBlob(b => res(b ? URL.createObjectURL(b) : null), "image/jpeg", 0.88);
+      };
+      img.onerror = () => res(null);
+      img.src = fr.result;
+    };
+    fr.onerror = () => res(null);
+    fr.readAsArrayBuffer(file);
+  });
+}
+
+function storyClear(){
+  STORY.revokes.forEach(u => { try { URL.revokeObjectURL(u); } catch(e){} });
+  STORY.revokes = [];
+  STORY.bg = null; STORY.polis = []; STORY.trip = null;
+}
+
+/* 等比例縮放 9:16 畫布以符合螢幕，不拉長壓扁 */
+function storyFit(){
+  const wrap = $("#story-wrap"), stage = $(".story-stage");
+  if (!wrap) return;
+  const s = Math.min(1, document.documentElement.clientWidth / 750, document.documentElement.clientHeight / 1334);
+  wrap.style.setProperty("--s", s);
+  if (stage) stage.style.height = (1334 * s) + "px";
+}
+
+/* 開啟 9:16 分享編輯彈窗 */
+function openStory(t){
+  STORY.trip = t;
+  const from = (t.spots && t.spots[0] && t.spots[0].city) || "出發地";
+  const to = t.country || "未知國";
+  const date = `${t.startDate || ""}${t.endDate ? " \u2212 " + t.endDate.slice(5) : ""}`;
+  modal(`<div class="story-modal">
+    <div class="story-head"><h3>限時動態分享圖</h3><p class="story-meta">${esc(t.title)}</p></div>
+    <div class="story-stage">
+      <div class="story-wrap" id="story-wrap">
+        <div class="story-bg" id="story-bg"></div>
+        <div class="story-envelope" id="story-envelope"><div class="story-mouth"></div><div class="story-flap"></div></div>
+        <div class="story-polis" id="story-polis"></div>
+        <div class="story-ticket" id="story-ticket">
+          <div class="tk-row"><span class="tk-lab">FROM</span><span class="tk-val">${esc(from)}</span></div>
+          <div class="tk-row"><span class="tk-lab">TO</span><span class="tk-val">${esc(to)}</span></div>
+          <div class="tk-row"><span class="tk-lab">DATE</span><span class="tk-val">${esc(date)}</span></div>
+        </div>
+        <div class="story-stamps" id="story-stamps">
+          <div class="story-stamp" style="left:26px;top:30px;transform:rotate(-6deg)">POSTED</div>
+          <div class="story-stamp" style="right:26px;top:160px;transform:rotate(8deg)">AIR MAIL</div>
+        </div>
+      </div>
+    </div>
+    <div class="story-upload">
+      <label class="story-up">背景大圖（1 張）<input type="file" accept="image/*" class="story-file" data-st="bg"></label>
+      <label class="story-up">拍立得照片（1~5 張）<input type="file" accept="image/*" class="story-file" data-st="pol" multiple></label>
+    </div>
+    <div class="story-foot">
+      <button class="pill gl" data-a="storydl" id="storydl">下載分享圖</button>
+    </div>
+  </div>`);
+  setupStoryInputs();
+  renderStory();
+  storyFit();
+}
+
+/* 視窗大小變更時重新等比例縮放 */
+addEventListener("resize", storyFit);
+
+/* 綁定檔案上傳輸入（背景 1 張、拍立得 1~5 張） */
+function setupStoryInputs(){
+  const wrap = $("#story-wrap");
+  if (!wrap) return;
+  wrap.querySelectorAll(".story-file").forEach(inp => {
+    inp.onchange = async e => {
+      const st = inp.dataset.st;
+      const files = [...(inp.files || [])];
+      if (st === "bg") {
+        if (files.length) {
+          const u = await compressToBlob(files[0]);
+          if (u) { STORY.bg = u; STORY.revokes.push(u); }
+        }
+      } else if (st === "pol") {
+        const urls = [];
+        for (const f of files.slice(0, 5)) {
+          const u = await compressToBlob(f);
+          if (u) { urls.push(u); STORY.revokes.push(u); }
+        }
+        STORY.polis = urls;
+      }
+      inp.value = "";
+      renderStory();
+    };
+  });
+}
+
+function storyRandRot(){ return (Math.random() * 16 - 8).toFixed(2) + "deg"; }
+
+/* 重繪預覽拼貼；等待圖片載入後才產生動畫，避免截圖空白 */
+function renderStory(){
+  const bg = $("#story-bg"), polis = $("#story-polis");
+  if (!bg) return;
+  if (STORY.bg) { bg.style.backgroundImage = `url(${STORY.bg})`; bg.dataset.loaded = "1"; bg.className = "story-bg"; }
+  else { bg.style.backgroundImage = "none"; bg.className = "story-bg story-empty"; bg.dataset.loaded = "1"; }
+
+  let html = "";
+  STORY.polis.forEach((u, i) => {
+    const rot = storyRandRot();
+    const left = 320 + i * 52;   // 錯開於信封開口（約 x=320~620）
+    const top = 430 + i * 9;     // 疊在信封開口處（約 y=430~495）
+    const delay = (i * 0.08).toFixed(2) + "s";
+    html += `<div class="story-p" style="left:${left}px;top:${top}px;z-index:${10 + i};--r:${rot}">
+      <div class="story-pframe story-panim" style="animation-delay:${delay}"><img src="${u}" class="story-pimg" loading="eager" onload="this.closest('.story-pframe')?.classList.add('p-loaded')"></div>
+    </div>`;
+  });
+  polis.innerHTML = html;
+}
+
+/* 一鍵下載 / 分享：確認圖片皆載入後截圖，支援下載與原生分享 */
+async function downloadStory(){
+  const wrap = $("#story-wrap");
+  const btn = $("#storydl");
+  if (!wrap || !btn) return;
+  // 非同步載入防護：確認背景與所有拍立得圖片已完全載入
+  const imgs = [...wrap.querySelectorAll("img")];
+  await Promise.all(imgs.map(img => {
+    if (img.complete && img.naturalWidth) return Promise.resolve();
+    return new Promise(res => { img.onload = res; img.onerror = res; });
+  }));
+  if (typeof htmltoimage === "undefined") return toast("截圖套件尚未載入，請稍後再試");
+  // 載入狀態：轉圈與提示文字
+  const orig = btn.innerHTML;
+  btn.classList.add("story-loading");
+  btn.disabled = true;
+  btn.innerHTML = "產生中…";
+  try {
+    const dataUrl = await htmltoimage.toPng(wrap, { quality: 1, cacheBusting: true, pixelRatio: 1 });
+    const blob = await (await fetch(dataUrl)).blob();
+    const file = new File([blob], `TripTick_${esc(STORY.trip.title || "trip")}.png`, { type: "image/png" });
+    // 下載至手機相簿（稍後釋放 Blob URL，避免下載尚未開始即被撤銷）
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = file.name; a.style.display = "none";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 200);
+    // 原生分享（僅在支援檔案分享時）
+    if (navigator.share && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: STORY.trip.title, text: "我的 TripTick 旅行回憶" }); }
+      catch (e) { /* 使用者取消分享，靜默忽略 */ }
+    }
+    toast("分享圖已下載");
+  } catch (e) {
+    console.error("[storydl]", e);
+    toast("截圖失敗，請確認圖片已上傳並重新嘗試");
+  } finally {
+    btn.classList.remove("story-loading");
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
+}
 /* ===== 歷史明信片：上方 3:4 照片 + 下方純白文字區（橫向滑動列表卡片） ===== */
 function pcMeta(t){const dateTxt=`${t.startDate||"日期未定"}${t.endDate?" – "+t.endDate.slice(5):""}`;
  const mates=[...new Set(t.members||[])].map(u=>nameOf(t,u)).map(n=>/^[0-9a-zA-Z]{20,}$/.test(n)?"旅客":n);
@@ -317,7 +495,7 @@ function pcard(t){const{dateTxt,mateTxt}=pcMeta(t),cities=pcCities(t),img=t.imag
     <p class="pc-meta">${flagOf(t)} ${esc(dateTxt)}<br>${nd(t)} 天<br>旅客：${esc(mateTxt)}</p>
     <div class="pc-note-row"><div class="pc-note"><em>心情札記</em><p>${t.notes?esc(t.notes):"還沒有寫下這趟旅程的心情札記…"}</p></div>${cities?`<span class="pc-cities" title="${esc(cities)}">${esc(cities)}</span>`:""}</div>
    </div>
-   <div class="pills pc-act">${me?`<button class="pill" data-a="edit" data-v="${esc(t.id)}"><i class=i-edit></i> 編輯</button>`:""}${t.status==="past"?`<button class="pill gl" data-a="setcur" data-v="${esc(t.id)}">設為當前行程</button>`:""}${t.owner===me?.uid?`<button class="pill gl" data-a="del" data-v="${esc(t.id)}"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg> 刪除</button>`:""}</div>
+   <div class="pills pc-act">${me?`<button class="pill" data-a="edit" data-v="${esc(t.id)}"><i class=i-edit></i> 編輯</button>`:""}${t.status==="past"?`<button class="pill gl" data-a="setcur" data-v="${esc(t.id)}">設為當前行程</button>`:""}${t.status==="past"?`<button class="pill gl story-share" data-a="story" data-v="${esc(t.id)}" aria-label="產生這趟旅程的 IG 限時動態分享圖">${storySvg()}</button>`:""}${t.owner===me?.uid?`<button class="pill gl" data-a="del" data-v="${esc(t.id)}"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg> 刪除</button>`:""}</div>
   </div>
  </article>`}
 
@@ -502,12 +680,14 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="savesos"&&t){const arr=[...document.querySelectorAll(".sosr")].map(r=>{const l=r.querySelector(".sosl").value.trim(),x=r.querySelector(".sosv").value.trim();return[l,x,/^\+?[\d\s\-()]{3,}$/.test(x)?"tel:"+x.replace(/[^\d+]/g,""):""]}).filter(r=>r[0]||r[1]);patch(t,{sos:arr}).then(()=>{modal(sosHTML(t));toast("已儲存")});return}
  if(a==="export"){exportBackup();return}
  if(a==="import"){const inp=document.createElement("input");inp.type="file";inp.accept="application/json,.json";inp.onchange=()=>importBackup(inp.files[0]);inp.click();return}
- if(a==="close")$("#modal").classList.remove("on");
+ if(a==="story"){const x=TRIPS.find(y=>y.id===v);if(x)openStory(x);return}
+ if(a==="storydl"){downloadStory();return}
+ if(a==="close"){storyClear();$("#modal").classList.remove("on");}
  else if(a==="cp")copy(v);
  else if(a==="m"&&t)modal({book:bookHTML,diet:dietHTML,sos:sosHTML}[v](t));
  else if(a==="hs"&&t)mapZoom(t,+v);
  else if(a==="day"&&t){focusDay(t,+v,!!b.dataset.go)}});
-$("#modal").addEventListener("click",e=>{if(e.target.id==="modal")$("#modal").classList.remove("on")});
+$("#modal").addEventListener("click",e=>{if(e.target.id==="modal"){storyClear();$("#modal").classList.remove("on")}});
 (async()=>{MapView.init();if(!FB_OK)AUTHREADY=true;
  try{const r=JSON.parse(localStorage.getItem("tp-snap")||"null");if(r&&Array.isArray(r.trips))SNAPRAW=r}catch(e){}
  window.addEventListener("online",updBar);window.addEventListener("offline",updBar);
