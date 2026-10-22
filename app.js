@@ -432,23 +432,44 @@ function setupStoryInputs(){
   const wrap = $("#story-wrap");
   if (!wrap) return;
   wrap.querySelectorAll(".story-file").forEach(inp => {
-    inp.onchange = async e => {
-      const st = inp.dataset.st;
-      const files = [...(inp.files || [])];
+    // 移除舊的監聽器避免重複綁定
+    const newInp = inp.cloneNode(true);
+    inp.parentNode.replaceChild(newInp, inp);
+    newInp.onchange = async e => {
+      const st = newInp.dataset.st;
+      const files = [...(newInp.files || [])];
       if (st === "bg") {
         if (files.length) {
-          const u = await compressToBlob(files[0]);
-          if (u) { STORY.bg = u; STORY.revokes.push(u); }
+          // 立即用原始檔案建立預覽網址，讓畫面馬上有回饋
+          const immediateUrl = URL.createObjectURL(files[0]);
+          STORY.bg = immediateUrl;
+          STORY.revokes.push(immediateUrl);
+          // 同時壓縮為 ≤500KB 用於最終輸出
+          const compressed = await compressToBlob(files[0]);
+          if (compressed) {
+            // 將舊的即時網址替換為壓縮後的
+            const idx = STORY.revokes.indexOf(immediateUrl);
+            if (idx >= 0) STORY.revokes[idx] = compressed;
+            STORY.bg = compressed;
+          }
         }
       } else if (st === "pol") {
         const urls = [];
         for (const f of files.slice(0, 5)) {
-          const u = await compressToBlob(f);
-          if (u) { urls.push(u); STORY.revokes.push(u); }
+          // 立即用原始檔案建立預覽網址
+          const immediateUrl = URL.createObjectURL(f);
+          urls.push(immediateUrl);
+          STORY.revokes.push(immediateUrl);
+          // 同時壓縮為 ≤500KB 用於最終輸出
+          const compressed = await compressToBlob(f);
+          if (compressed) {
+            const idx = urls.indexOf(immediateUrl);
+            if (idx >= 0) urls[idx] = compressed;
+          }
         }
         STORY.polis = urls;
       }
-      inp.value = "";
+      newInp.value = "";
       renderStory();
     };
   });
@@ -463,19 +484,35 @@ function renderStory(){
   if (STORY.bg) { bg.style.backgroundImage = `url(${STORY.bg})`; bg.dataset.loaded = "1"; bg.className = "story-bg"; }
   else { bg.style.backgroundImage = "none"; bg.className = "story-bg story-empty"; bg.dataset.loaded = "1"; }
 
+  const n = STORY.polis.length;
+  if (n === 0) { polis.innerHTML = ""; return; }
+
+  // 扇形散開參數：照片 340×530，中心約 x=375，信封開口約 y=505
+  // 照片下半部落在信封內，上半部露出，形成扇形錯落
+  const centerX = 375;
+  const photoW = 340;
+  const photoH = 530;
+  const baseTop = 220;              // 照片頂部基準位置（跨越信封開口）
+  const baseLeft = centerX - photoW / 2;   // 置中基準
+  const spreadX = 90;               // 左右散開幅度
+  const spreadTop = 30;             // 上下散開幅度
+  const maxRot = 10;                // 最大旋轉角度
+
   let html = "";
   STORY.polis.forEach((u, i) => {
-    const rot = storyRandRot();          // 已含 "deg"
-    // 定位於信封口（夾層），下半部插在信封內（被 envelope.png 擋住），上半部露出
-    // envelope 頂部約在 canvas y≈505，照片 150px 高，從 y≈430 開始，約半數被遮擋
-    const left = -30 + i * 155;
-    const top = 430 + i * 12;
-    const delay = (i * 0.10).toFixed(2) + "s";
-    html += `<div class="story-p" style="left:${left}px;top:${top}px;z-index:${11 + i};--r:${rot}">
+    // 計算扇形位置：兩端向外擴散，中間靠近中心
+    const t = n === 1 ? 0 : i / (n - 1);           // 0~1
+    const offsetX = (t - 0.5) * spreadX * 2;       // -spreadX ~ +spreadX
+    const rot = (t - 0.5) * maxRot * 2;            // -maxRot ~ +maxRot
+    const left = baseLeft + offsetX;
+    const top = baseTop + (Math.abs(t - 0.5) * spreadTop);  // 兩端稍低，中間稍高
+    const delay = (i * 0.08).toFixed(2) + "s";
+
+    html += `<div class="story-p" style="left:${left}px;top:${top}px;z-index:${11 + i};--r:${rot}deg">
       <div class="story-pinner story-panim" style="animation-delay:${delay}">
         <div class="story-pframe">
           <img src="${u}" class="story-pimg" loading="eager" onload="this.closest('.story-pframe')?.classList.add('p-loaded')">
-          <!-- 去背拍立得相紙框，覆蓋在照片上方，中心透明讓照片露出 -->
+          <!-- 去背拍立得相紙框 Polaroid.png，與照片同尺寸完美覆蓋，中心挖空讓底層照片露出 -->
           <img src="Polaroid.png" class="story-polaroid-frame" loading="eager">
         </div>
       </div>
