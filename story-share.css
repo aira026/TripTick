@@ -24,7 +24,7 @@
   width:900px;
   margin:0 auto;
   bottom:120px;
-  /* 高度依圖片比例自動，子圖自然大小 */
+  height:calc(900 * 1333 / 1180);
   background:#fff;
   border:1px solid rgba(255,255,255,.5);
   -webkit-backdrop-filter:blur(8px);
