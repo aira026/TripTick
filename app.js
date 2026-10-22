@@ -580,9 +580,9 @@ function pcard(t){const{dateTxt,mateTxt}=pcMeta(t),cities=pcCities(t),img=t.imag
     <p class="pc-meta">${flagOf(t)} ${esc(dateTxt)}<br>${nd(t)} 天<br>旅客：${esc(mateTxt)}</p>
     <div class="pc-note-row"><div class="pc-note"><em>心情札記</em><p>${t.notes?esc(t.notes):"還沒有寫下這趟旅程的心情札記…"}</p></div>${cities?`<span class="pc-cities" title="${esc(cities)}">${esc(cities)}</span>`:""}</div>
    </div>
-   <div class="pills pc-act">${me?`<button class="pill" data-a="edit" data-v="${esc(t.id)}"><i class=i-edit></i> 編輯</button>`:""}${t.status==="past"?`<button class="pill gl" data-a="setcur" data-v="${esc(t.id)}">設為當前行程</button>`:""}${t.status==="past"?`<button class="pill gl story-share" data-a="story" data-v="${esc(t.id)}" aria-label="產生這趟旅程的 IG 限時動態分享圖">${storySvg()}</button>`:""}${t.owner===me?.uid?`<button class="pill gl" data-a="del" data-v="${esc(t.id)}"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg> 刪除</button>`:""}</div>
+<div class="pills pc-act">${me ? `<button class="pill" data-a="edit" data-v="${esc(t.id)}"><i class=i-edit></i> 編輯</button>` : ""}${t.status==="past"?`<button class="pill gl" data-a="setcur" data-v="${esc(t.id)}">設為當前行程</button>`:""}${t.status==="past"?`<button class="pill gl story-share" data-a="story" data-v="${esc(t.id)}" aria-label="產生這趟旅程的 IG 限時動態分享圖">${storySvg()}</button>`:""}${t.owner===me?.uid?`<button class="pill gl" data-a="del" data-v="${esc(t.id)}"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg> 刪除</button>`:""}</div>
   </div>
- </article>`}
+   </article>`}
 
 /* ===== 排序：預設依出發日期由左至右；長按拖曳可自訂順序（存 localStorage） ===== */
 const PORD_KEY="tp-past-order";
