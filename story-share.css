@@ -1,0 +1,82 @@
+/* ===== IG Story：復古信封拼貼 9:16 分享圖（SS 功能：視覺骨架，不做上傳/動畫/匯出） ===== */
+
+/* 最外層分享容器：固定 1080×1920px */
+.ss-share-wrap{
+  position:fixed;
+  width:1080px;
+  height:1920px;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  z-index:9999;
+  overflow:hidden;
+}
+
+/* 預覽模式：外層縮放，錨點為左上角 */
+.ss-share-wrap.preview{
+  transform:scale(var(--ss-scale,1));
+  transform-origin:top left;
+}
+
+/* ===== 舞台 .stage ===== */
+.ss-stage{
+  position:relative;
+  width:900px;
+  margin:0 auto;
+  bottom:120px;
+  /* 高度依圖片比例自動，子圖自然大小 */
+  background:#fff;
+  border:1px solid rgba(255,255,255,.5);
+  -webkit-backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px);
+  border-radius:24px;
+}
+
+/* 四個圖層（由下至上）*/
+/* z0：背景（純色預設，若有背景圖則由 JS 註入）*/
+.ss-layer-z0{
+  position:absolute;
+  inset:0;
+  background:#e6f2fa;
+  z-index:0;
+}
+
+/* z1：信封 Envelope.png - 完全重疊在 .stage 內 */
+.ss-layer-z1{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  /* 圖片由 HTML 插入，width/height 由 naturalSize 設定 */
+}
+
+/* z2：拍立得 Polaroid.png - 假色塊placeholder */
+.ss-layer-z2{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  background:#ffe8e8;  /* 假色：淡紅色 */
+  /* 實際上會被 Envelope/air tickets 覆蓋部分 */
+}
+
+/* z3：機票 air tickets.png - 放在信封開口，下半部落在 pre-envelope 後方 */
+.ss-layer-z3{
+  position:absolute;
+  inset:0;
+  z-index:3;
+  /* 圖片由 HTML 插入 */
+}
+
+/* z5：預覆層 pre-envelope.png - 同尺寸 inset:0 完全重疊在 .stage 內 */
+.ss-layer-z5{
+  position:absolute;
+  inset:0;
+  z-index:5;
+  /* 圖片由 HTML 插入 */
+}
+
+/* ===== 響應式：若需縮放以適應螢幕 ===== */
+.ss-share-wrap.ss-mobile{
+  width:max(100vw,720px);
+  height:max(calc(100vw*1920/1080),1334px);
+  transform:none;
+}
