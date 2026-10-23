@@ -1,18 +1,16 @@
-/* story-share.js 第 3 段：由上落下、不遮擋、郵戳郵票 */
+/* story-share.js 第 4 段：3 張限制、郵戳波浪銷印、TRIPTICK 郵票 */
 (function () {
   var W = 1080, H = 1920;
 
   var CFG = {
     stageW: 900, bottom: 200,
-    ticket: { w: 760, cx: 450, top: 120, rot: -3, fall: 900 },
+    ticket: { w: 760, cx: 450, top: -20, rot: -3, fall: 900 },
     photoW: 250, photoFall: 1000,
-    /* 照片落點：[中心x, 頂端y, 旋轉角]，依張數 */
+    /* 照片落點：[中心x, 頂端y, 旋轉角]，座標以信封左上角為原點 */
     layouts: {
-      1: [[170, 330, -7]],
-      2: [[170, 330, -8], [730, 330, 7]],
-      3: [[160, 340, -8], [740, 340, 8], [450, 420, -2]],
-      4: [[150, 330, -8], [750, 330, 8], [300, 440, 5], [600, 440, -5]],
-      5: [[150, 320, -9], [750, 320, 9], [260, 450, 5], [640, 450, -4], [450, 400, 2]]
+      1: [[450, 240, -3]],
+      2: [[230, 200, -8], [670, 200, 8]],
+      3: [[230, 200, -8], [670, 200, 8], [450, 250, -2]]
     },
     fields: {
       passenger: { x: .17, y: .38, max: .27 },
@@ -21,8 +19,15 @@
       date:      { x: .60, y: .59, max: .17 },
       extra:     { x: .13, y: .775, max: .13 },
       seat:      { x: .53, y: .775, max: .10 }
-    }
+    },
+    /* 郵票與郵戳（畫布座標） */
+    stamp: { x: 905, y: 175, w: 140, h: 170, rot: 6 },
+    mark:  { x: 790, y: 225, r: 88, rot: -10 }
   };
+
+  var MONO = '"Space Mono", ui-monospace, Menlo, "PingFang TC", monospace';
+  var PLANE = 'M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z';
+  var PLANE2 = 'm21.854 2.147-10.94 10.939';
 
   var assetsP = null;
   function load(src) {
@@ -34,18 +39,26 @@
     });
   }
   function ease(t) { t = Math.max(0, Math.min(1, t)); return 1 - Math.pow(1 - t, 3); }
-  /* 落下帶一點點回彈 */
   function drop(t) {
     t = Math.max(0, Math.min(1, t));
     if (t >= 1) return 1;
-    var b = 1 - Math.pow(1 - t, 3);
-    return b + Math.sin(t * Math.PI) * 0.03;
+    return 1 - Math.pow(1 - t, 3) + Math.sin(t * Math.PI) * 0.03;
+  }
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function newCanvas(w, h) {
+    var c = document.createElement('canvas'); c.width = w; c.height = h; return c;
   }
 
   function detectWindow(img) {
     try {
-      var c = document.createElement('canvas');
-      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      var c = newCanvas(img.naturalWidth, img.naturalHeight);
       var x = c.getContext('2d'); x.drawImage(img, 0, 0);
       var w = c.width, h = c.height, d = x.getImageData(0, 0, w, h).data;
       var a = function (px, py) { return d[(py * w + px) * 4 + 3]; };
@@ -71,9 +84,10 @@
     if (!assetsP) {
       assetsP = Promise.all([
         load('envelope.png'), load('pre-envelope.png'),
-        load(encodeURI('air tickets.png')), load('Polaroid.png')
+        load(encodeURI('air tickets.png')), load('Polaroid.png'),
+        load('stamp-logo.png')
       ]).then(function (r) {
-        return { env: r[0], pre: r[1], tk: r[2], pol: r[3],
+        return { env: r[0], pre: r[1], tk: r[2], pol: r[3], logo: r[4],
                  win: r[3] ? detectWindow(r[3]) : null };
       });
     }
@@ -89,7 +103,7 @@
     var w = Math.round(im.naturalWidth * s), h = Math.round(im.naturalHeight * s);
     var q = 0.9, blob = null;
     for (var n = 0; n < 8; n++) {
-      var c = document.createElement('canvas'); c.width = w; c.height = h;
+      var c = newCanvas(w, h);
       c.getContext('2d').drawImage(im, 0, 0, w, h);
       blob = await new Promise(function (r) { c.toBlob(r, 'image/jpeg', q); });
       if (!blob || blob.size <= 500 * 1024) break;
@@ -110,54 +124,100 @@
     if (!txt) return;
     var f = size;
     for (; f > 8; f--) {
-      ctx.font = '700 ' + f + 'px "Space Mono", ui-monospace, Menlo, "PingFang TC", monospace';
+      ctx.font = '700 ' + f + 'px ' + MONO;
       if (ctx.measureText(txt).width <= maxW) break;
     }
     ctx.fillText(txt, x, y);
   }
 
-  /* 圓形郵戳：雙圈 + 目的地 + 日期 */
-  function postmark(ctx, x, y, r, rot, line1, line2) {
-    ctx.save();
-    ctx.translate(x, y); ctx.rotate(rot * Math.PI / 180);
-    ctx.globalAlpha = 0.78;
-    ctx.strokeStyle = '#7a2e26'; ctx.fillStyle = '#7a2e26';
-    ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
-    ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, r - 12, 0, Math.PI * 2); ctx.stroke();
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '700 ' + Math.round(r * 0.26) + 'px "Space Mono", ui-monospace, monospace';
-    ctx.fillText((line1 || 'AIR MAIL').toUpperCase().slice(0, 12), 0, -r * 0.22);
-    ctx.font = '700 ' + Math.round(r * 0.2) + 'px "Space Mono", ui-monospace, monospace';
-    ctx.fillText(line2 || '', 0, r * 0.22);
-    ctx.restore();
+  /* ===== 郵票：獨立圖層繪製（鋸齒邊不會在匯出時變透明洞） ===== */
+  function makeStamp(logo) {
+    var w = CFG.stamp.w, h = CFG.stamp.h, pad = 10;
+    var c = newCanvas(w + pad * 2, h + pad * 2), x = c.getContext('2d');
+    x.translate(pad, pad);
+    x.fillStyle = '#fbf6ea'; x.fillRect(0, 0, w, h);
+    x.globalCompositeOperation = 'destination-out';
+    var step = 14, rr = 4.5, i;
+    for (i = step / 2; i < w; i += step) {
+      x.beginPath(); x.arc(i, 0, rr, 0, 7); x.fill();
+      x.beginPath(); x.arc(i, h, rr, 0, 7); x.fill();
+    }
+    for (i = step / 2; i < h; i += step) {
+      x.beginPath(); x.arc(0, i, rr, 0, 7); x.fill();
+      x.beginPath(); x.arc(w, i, rr, 0, 7); x.fill();
+    }
+    x.globalCompositeOperation = 'source-over';
+    if (logo) {
+      cover(x, logo, 12, 12, w - 24, h - 24);
+    } else {
+      x.fillStyle = '#2f4a7a'; x.fillRect(12, 12, w - 24, h - 24);
+      x.strokeStyle = 'rgba(251,246,234,.55)'; x.lineWidth = 2;
+      x.strokeRect(19, 19, w - 38, h - 38);
+      x.save();
+      x.translate(w / 2 - 30, h / 2 - 34); x.scale(2.5, 2.5);
+      x.strokeStyle = '#fbf6ea'; x.lineWidth = 1.7;
+      x.lineCap = 'round'; x.lineJoin = 'round';
+      x.stroke(new Path2D(PLANE)); x.stroke(new Path2D(PLANE2));
+      x.restore();
+      x.fillStyle = '#fbf6ea'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.font = '700 15px ' + MONO;
+      x.fillText('TRIPTICK', w / 2, h - 36);
+    }
+    return c;
   }
 
-  /* 鋸齒邊郵票 */
-  function stamp(ctx, x, y, w, h, rot, label) {
-    ctx.save();
-    ctx.translate(x, y); ctx.rotate(rot * Math.PI / 180);
-    ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
-    ctx.fillStyle = '#fbf6ea';
-    ctx.fillRect(-w / 2, -h / 2, w, h);
-    ctx.shadowColor = 'transparent';
-    ctx.fillStyle = 'rgba(0,0,0,.0)';
-    var step = 14, rr = 4;
-    ctx.globalCompositeOperation = 'destination-out';
-    for (var i = -w / 2; i <= w / 2; i += step) {
-      ctx.beginPath(); ctx.arc(i, -h / 2, rr, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(i, h / 2, rr, 0, Math.PI * 2); ctx.fill();
+  /* ===== 郵戳 + 波浪銷印線（含墨跡斑駁） ===== */
+  function makeMarks(info) {
+    var c = newCanvas(W, 460), x = c.getContext('2d');
+    var M = CFG.mark, R = rng(20251018);
+    var ink = '#5b2a22';
+    x.strokeStyle = ink; x.fillStyle = ink; x.lineCap = 'round';
+
+    /* 圓形郵戳 */
+    x.save();
+    x.translate(M.x, M.y); x.rotate(M.rot * Math.PI / 180);
+    x.lineWidth = 5; x.beginPath(); x.arc(0, 0, M.r, 0, 7); x.stroke();
+    x.lineWidth = 2; x.beginPath(); x.arc(0, 0, M.r - 11, 0, 7); x.stroke();
+    x.lineWidth = 2;
+    x.beginPath(); x.moveTo(-M.r + 14, -8); x.lineTo(M.r - 14, -8);
+    x.moveTo(-M.r + 14, 22); x.lineTo(M.r - 14, 22); x.stroke();
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = '700 15px ' + MONO;
+    x.fillText('AIR MAIL', 0, -M.r * 0.5);
+    var to = (info.to || info.title || '').toUpperCase();
+    x.font = '700 22px ' + MONO;
+    while (x.measureText(to).width > M.r * 1.55 && to.length > 2) to = to.slice(0, -1);
+    x.fillText(to, 0, 7);
+    var dt = (info.date || '').split(' ')[0];
+    x.font = '700 15px ' + MONO;
+    x.fillText(dt, 0, M.r * 0.55);
+    x.restore();
+
+    /* 波浪銷印線：橫跨郵戳與郵票 */
+    x.lineWidth = 6;
+    for (var k = 0; k < 5; k++) {
+      var y0 = 135 + k * 33;
+      x.beginPath();
+      for (var px = 735; px <= 1030; px += 4) {
+        var py = y0 + Math.sin((px - 735) / 48 * Math.PI * 2) * 9;
+        if (px === 735) x.moveTo(px, py); else x.lineTo(px, py);
+      }
+      x.stroke();
     }
-    for (var j = -h / 2; j <= h / 2; j += step) {
-      ctx.beginPath(); ctx.arc(-w / 2, j, rr, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(w / 2, j, rr, 0, Math.PI * 2); ctx.fill();
+
+    /* 墨跡斑駁：隨機擦掉小點與墨塊 */
+    x.globalCompositeOperation = 'destination-out';
+    var i;
+    for (i = 0; i < 1100; i++) {
+      x.globalAlpha = 0.5 + R() * 0.5;
+      x.beginPath(); x.arc(R() * W, R() * 460, 0.4 + R() * 2.2, 0, 7); x.fill();
     }
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = '#2f4a7a';
-    ctx.fillRect(-w / 2 + 12, -h / 2 + 12, w - 24, h - 24);
-    ctx.fillStyle = '#fbf6ea'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '700 ' + Math.round(h * 0.34) + 'px "Space Mono", ui-monospace, monospace';
-    ctx.fillText(label || '', 0, 0);
-    ctx.restore();
+    for (i = 0; i < 45; i++) {
+      x.globalAlpha = 0.25 + R() * 0.35;
+      x.beginPath(); x.arc(700 + R() * 340, 100 + R() * 250, 3 + R() * 7, 0, 7); x.fill();
+    }
+    x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
+    return c;
   }
 
   function draw(ctx, p, S) {
@@ -176,11 +236,9 @@
 
     ctx.save();
     ctx.translate(ox, oy);
-
-    /* 信封後層（不動） */
     ctx.drawImage(A.env, 0, 0, ew, eh);
 
-    /* 機票：先落，落點在照片後面、資訊區不被遮 */
+    /* 機票 */
     if (A.tk) {
       var T = CFG.ticket, tw = T.w, th = tw * A.tk.naturalHeight / A.tk.naturalWidth;
       var ty = T.top - (1 - drop(p / 800)) * (T.fall + th);
@@ -201,12 +259,12 @@
       ctx.restore();
     }
 
-    /* 拍立得：落在機票左右兩側，由上落下 */
-    var n = Math.max(1, Math.min(5, S.photos.length || 3));
+    /* 拍立得（最多 3 張） */
+    var n = Math.max(1, Math.min(3, S.photos.length || 3));
     var L = CFG.layouts[n];
     var win = A.win || { x: .08, y: .06, w: .84, h: .74 };
     var pw = CFG.photoW, ph = A.pol ? pw * A.pol.naturalHeight / A.pol.naturalWidth : pw * 1.2;
-    var colors = ['#f4c7c3', '#c9dff0', '#d8ecc8', '#f3e3b5', '#e0cdee'];
+    var colors = ['#f4c7c3', '#c9dff0', '#d8ecc8'];
     for (var i = 0; i < n; i++) {
       var pos = L[i];
       var py = pos[1] - (1 - drop((p - 700 - i * 160) / 800)) * (CFG.photoFall + ph);
@@ -219,21 +277,26 @@
       ctx.fillStyle = '#fff'; ctx.fillRect(-pw / 2, -ph / 2, pw, ph);
       ctx.shadowColor = 'transparent';
       if (im) cover(ctx, im, wx, wy, ww, wh);
-      else { ctx.fillStyle = colors[i % 5]; ctx.fillRect(wx, wy, ww, wh); }
+      else { ctx.fillStyle = colors[i % 3]; ctx.fillRect(wx, wy, ww, wh); }
       if (A.pol) ctx.drawImage(A.pol, -pw / 2, -ph / 2, pw, ph);
       ctx.restore();
     }
 
-    /* 前口袋 */
     ctx.drawImage(A.pre, 0, 0, ew, eh);
     ctx.restore();
 
-    /* 郵票與郵戳（信封外、畫面角落），晚一點淡入 */
+    /* 郵票 + 郵戳銷印，淡入 */
     var fade = ease((p - 1700) / 500);
     if (fade > 0) {
       ctx.save(); ctx.globalAlpha = fade;
-      stamp(ctx, 900, 150, 130, 160, 6, I.code || '');
-      postmark(ctx, 830, 190, 80, -12, I.to || 'AIR MAIL', I.date ? I.date.slice(0, 10) : '');
+      var st = CFG.stamp;
+      ctx.save();
+      ctx.translate(st.x, st.y); ctx.rotate(st.rot * Math.PI / 180);
+      ctx.shadowColor = 'rgba(0,0,0,.28)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+      ctx.drawImage(S.stampImg, -S.stampImg.width / 2, -S.stampImg.height / 2);
+      ctx.restore();
+      ctx.globalAlpha = fade * 0.82;
+      ctx.drawImage(S.marks, 0, 0);
       ctx.restore();
     }
   }
@@ -242,16 +305,17 @@
     if (document.getElementById('ss-mask')) return;
     var S = {
       A: await getAssets(), bg: null, photos: [],
-      info: Object.assign({ name: '', from: '', to: '', date: '', extra: '', seat: '', title: '', code: '' }, info || {})
+      info: Object.assign({ name: '', from: '', to: '', date: '', extra: '', seat: '', title: '' }, info || {})
     };
+    S.stampImg = makeStamp(S.A.logo);
+    S.marks = makeMarks(S.info);
 
     var mask = document.createElement('div');
     mask.id = 'ss-mask';
     mask.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;';
 
     var scale = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 120) / H);
-    var cv = document.createElement('canvas');
-    cv.width = W; cv.height = H;
+    var cv = newCanvas(W, H);
     cv.style.cssText = 'width:' + (W * scale) + 'px;height:' + (H * scale) + 'px;border-radius:16px;flex:none;cursor:pointer;';
     var cx = cv.getContext('2d');
 
@@ -301,14 +365,14 @@
     mk('拍立得照片').onclick = function () {
       picker(true, async function (fs) {
         if (!fs.length) return;
-        if (fs.length > 5) { alert('最多 5 張，已取前 5 張'); fs = fs.slice(0, 5); }
+        if (fs.length > 3) { alert('最多 3 張，已取前 3 張'); fs = fs.slice(0, 3); }
         var items = [];
         for (var i = 0; i < fs.length; i++) { var it = await toItem(fs[i]); if (it) items.push(it); }
         free(S.photos); S.photos = items; play();
       });
     };
     mk('儲存 / 分享', true).onclick = async function () {
-      var c = document.createElement('canvas'); c.width = W; c.height = H;
+      var c = newCanvas(W, H);
       draw(c.getContext('2d'), 1e9, S);
       var blob = await new Promise(function (r) { c.toBlob(r, 'image/png'); });
       if (!blob) return;
