@@ -1,13 +1,19 @@
-/* story-share.js 第 2 段：Canvas 版（套框、上傳、動畫、匯出） */
+/* story-share.js 第 3 段：由上落下、不遮擋、郵戳郵票 */
 (function () {
   var W = 1080, H = 1920;
 
-  /* ===== 位置微調區：數字都集中在這裡 ===== */
   var CFG = {
-    stageW: 900, bottom: 120,                 /* 信封寬度、離底部距離 */
-    ticket: { w: 760, cx: 450, top: 235, rot: -4, rise: 420 },
-    photoW: 250, photoTop: 330, photoRise: 430,
-    /* 機票文字：x、y 是佔機票寬高的比例，max 是可用寬度比例 */
+    stageW: 900, bottom: 200,
+    ticket: { w: 760, cx: 450, top: 120, rot: -3, fall: 900 },
+    photoW: 250, photoFall: 1000,
+    /* 照片落點：[中心x, 頂端y, 旋轉角]，依張數 */
+    layouts: {
+      1: [[170, 330, -7]],
+      2: [[170, 330, -8], [730, 330, 7]],
+      3: [[160, 340, -8], [740, 340, 8], [450, 420, -2]],
+      4: [[150, 330, -8], [750, 330, 8], [300, 440, 5], [600, 440, -5]],
+      5: [[150, 320, -9], [750, 320, 9], [260, 450, 5], [640, 450, -4], [450, 400, 2]]
+    },
     fields: {
       passenger: { x: .17, y: .38, max: .27 },
       from:      { x: .13, y: .59, max: .13 },
@@ -28,8 +34,14 @@
     });
   }
   function ease(t) { t = Math.max(0, Math.min(1, t)); return 1 - Math.pow(1 - t, 3); }
+  /* 落下帶一點點回彈 */
+  function drop(t) {
+    t = Math.max(0, Math.min(1, t));
+    if (t >= 1) return 1;
+    var b = 1 - Math.pow(1 - t, 3);
+    return b + Math.sin(t * Math.PI) * 0.03;
+  }
 
-  /* 自動找出 Polaroid.png 中間透明的相片窗口 */
   function detectWindow(img) {
     try {
       var c = document.createElement('canvas');
@@ -68,7 +80,6 @@
     return assetsP;
   }
 
-  /* 壓縮到 500KB 內 */
   async function compress(file) {
     var url = URL.createObjectURL(file);
     var im = await load(url);
@@ -105,9 +116,52 @@
     ctx.fillText(txt, x, y);
   }
 
-  /* 主繪製：p 是動畫經過的毫秒數，傳很大的數字就是最終畫面 */
+  /* 圓形郵戳：雙圈 + 目的地 + 日期 */
+  function postmark(ctx, x, y, r, rot, line1, line2) {
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rot * Math.PI / 180);
+    ctx.globalAlpha = 0.78;
+    ctx.strokeStyle = '#7a2e26'; ctx.fillStyle = '#7a2e26';
+    ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, r - 12, 0, Math.PI * 2); ctx.stroke();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '700 ' + Math.round(r * 0.26) + 'px "Space Mono", ui-monospace, monospace';
+    ctx.fillText((line1 || 'AIR MAIL').toUpperCase().slice(0, 12), 0, -r * 0.22);
+    ctx.font = '700 ' + Math.round(r * 0.2) + 'px "Space Mono", ui-monospace, monospace';
+    ctx.fillText(line2 || '', 0, r * 0.22);
+    ctx.restore();
+  }
+
+  /* 鋸齒邊郵票 */
+  function stamp(ctx, x, y, w, h, rot, label) {
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rot * Math.PI / 180);
+    ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+    ctx.fillStyle = '#fbf6ea';
+    ctx.fillRect(-w / 2, -h / 2, w, h);
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = 'rgba(0,0,0,.0)';
+    var step = 14, rr = 4;
+    ctx.globalCompositeOperation = 'destination-out';
+    for (var i = -w / 2; i <= w / 2; i += step) {
+      ctx.beginPath(); ctx.arc(i, -h / 2, rr, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(i, h / 2, rr, 0, Math.PI * 2); ctx.fill();
+    }
+    for (var j = -h / 2; j <= h / 2; j += step) {
+      ctx.beginPath(); ctx.arc(-w / 2, j, rr, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(w / 2, j, rr, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#2f4a7a';
+    ctx.fillRect(-w / 2 + 12, -h / 2 + 12, w - 24, h - 24);
+    ctx.fillStyle = '#fbf6ea'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '700 ' + Math.round(h * 0.34) + 'px "Space Mono", ui-monospace, monospace';
+    ctx.fillText(label || '', 0, 0);
+    ctx.restore();
+  }
+
   function draw(ctx, p, S) {
-    var A = S.A;
+    var A = S.A, I = S.info;
     ctx.clearRect(0, 0, W, H);
     if (S.bg) cover(ctx, S.bg.img, 0, 0, W, H);
     else {
@@ -119,25 +173,25 @@
 
     var ew = CFG.stageW, eh = ew * A.env.naturalHeight / A.env.naturalWidth;
     var ox = (W - ew) / 2, oy = H - CFG.bottom - eh;
-    var slide = (1 - ease(p / 600)) * (H - oy + 60);
-    ctx.save();
-    ctx.translate(ox, oy + slide);
 
-    /* z1 信封後層 */
+    ctx.save();
+    ctx.translate(ox, oy);
+
+    /* 信封後層（不動） */
     ctx.drawImage(A.env, 0, 0, ew, eh);
 
-    /* z2 機票（在照片後面） */
+    /* 機票：先落，落點在照片後面、資訊區不被遮 */
     if (A.tk) {
       var T = CFG.ticket, tw = T.w, th = tw * A.tk.naturalHeight / A.tk.naturalWidth;
-      var tr = (1 - ease((p - 600) / 700)) * T.rise;
+      var ty = T.top - (1 - drop(p / 800)) * (T.fall + th);
       ctx.save();
-      ctx.translate(T.cx, T.top + th / 2 + tr);
+      ctx.translate(T.cx, ty + th / 2);
       ctx.rotate(T.rot * Math.PI / 180);
       ctx.shadowColor = 'rgba(0,0,0,.25)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 6;
       ctx.drawImage(A.tk, -tw / 2, -th / 2, tw, th);
       ctx.shadowColor = 'transparent';
-      ctx.fillStyle = '#3b2a24'; ctx.textBaseline = 'middle';
-      var F = CFG.fields, I = S.info;
+      ctx.fillStyle = '#3b2a24'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+      var F = CFG.fields;
       var put = function (k, v) {
         var f = F[k];
         fitText(ctx, v, -tw / 2 + f.x * tw, -th / 2 + f.y * th, f.max * tw, 18);
@@ -147,19 +201,18 @@
       ctx.restore();
     }
 
-    /* z3 拍立得（照片在下、相紙框在上） */
-    var n = S.photos.length || 3;
-    var rots = [-9, 3, 8, -5, 6], dys = [0, -14, 10, -6, 8];
+    /* 拍立得：落在機票左右兩側，由上落下 */
+    var n = Math.max(1, Math.min(5, S.photos.length || 3));
+    var L = CFG.layouts[n];
     var win = A.win || { x: .08, y: .06, w: .84, h: .74 };
     var pw = CFG.photoW, ph = A.pol ? pw * A.pol.naturalHeight / A.pol.naturalWidth : pw * 1.2;
-    var gap = n === 1 ? 0 : Math.min(210, 520 / (n - 1));
     var colors = ['#f4c7c3', '#c9dff0', '#d8ecc8', '#f3e3b5', '#e0cdee'];
     for (var i = 0; i < n; i++) {
-      var cx = 450 + (i - (n - 1) / 2) * gap;
-      var pr = (1 - ease((p - 900 - i * 150) / 700)) * CFG.photoRise;
+      var pos = L[i];
+      var py = pos[1] - (1 - drop((p - 700 - i * 160) / 800)) * (CFG.photoFall + ph);
       ctx.save();
-      ctx.translate(cx, CFG.photoTop + dys[i % 5] + ph / 2 + pr);
-      ctx.rotate((n === 1 ? -3 : rots[i % 5]) * Math.PI / 180);
+      ctx.translate(pos[0], py + ph / 2);
+      ctx.rotate(pos[2] * Math.PI / 180);
       var im = S.photos[i] ? S.photos[i].img : null;
       var wx = -pw / 2 + win.x * pw, wy = -ph / 2 + win.y * ph, ww = win.w * pw, wh = win.h * ph;
       ctx.shadowColor = 'rgba(0,0,0,.28)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 6;
@@ -171,16 +224,25 @@
       ctx.restore();
     }
 
-    /* z5 前口袋 */
+    /* 前口袋 */
     ctx.drawImage(A.pre, 0, 0, ew, eh);
     ctx.restore();
+
+    /* 郵票與郵戳（信封外、畫面角落），晚一點淡入 */
+    var fade = ease((p - 1700) / 500);
+    if (fade > 0) {
+      ctx.save(); ctx.globalAlpha = fade;
+      stamp(ctx, 900, 150, 130, 160, 6, I.code || '');
+      postmark(ctx, 830, 190, 80, -12, I.to || 'AIR MAIL', I.date ? I.date.slice(0, 10) : '');
+      ctx.restore();
+    }
   }
 
   window.ssOpen = async function (id, info) {
     if (document.getElementById('ss-mask')) return;
     var S = {
       A: await getAssets(), bg: null, photos: [],
-      info: Object.assign({ name: '', from: '', to: '', date: '', extra: '', seat: '', title: '' }, info || {})
+      info: Object.assign({ name: '', from: '', to: '', date: '', extra: '', seat: '', title: '', code: '' }, info || {})
     };
 
     var mask = document.createElement('div');
@@ -200,13 +262,12 @@
       (function f(now) {
         var p = now - t0;
         draw(cx, p, S);
-        if (p < 2600) raf = requestAnimationFrame(f);
+        if (p < 2800) raf = requestAnimationFrame(f);
       })(t0);
     }
     function still() { cancelAnimationFrame(raf); draw(cx, 1e9, S); }
     cv.onclick = play;
 
-    /* 按鈕列 */
     var row = document.createElement('div');
     row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;flex:none;';
     function mk(text, primary) {
