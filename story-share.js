@@ -23,10 +23,10 @@
     stamp: { x: 756, y: 846, w: 218, rot: 4 },
     mark:  { x: 787, y: 977, w: 409, rot: 0 },
     /* 郵戳日期：相對郵戳圖中心的偏移，size 為字級 */
-    markText: { x: -145, y: 0, size: 34, rot: 0 },
+    markText: { x: -60, y: 0, size: 38, rot: 0 },
     title: { cy: 400, w: 620 },
     snap: 14, snapRot: 4,
-    topSafe: 56
+    topSafe: 96
   };
 
   var ICON = {
@@ -258,7 +258,9 @@
             ctx.globalAlpha = al * 0.9;
             ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.font = '700 ' + T.size + 'px ' + MONO;
-            ctx.fillText(d, 0, 0);
+            var pp = d.split('.');
+            ctx.fillText(pp[0] + '.', 0, -T.size * 0.6);
+            ctx.fillText(pp[1] + '.' + pp[2], 0, T.size * 0.6);
             ctx.restore();
           }
         }
