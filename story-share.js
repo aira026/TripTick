@@ -1,4 +1,4 @@
-/* story-share.js 第 7 段：全物件可拖曳縮放旋轉刪除、編輯機票全螢幕頁 */
+/* story-share.js 第 8 段：參考線吸附、郵戳日期、新分享圖示、LOGO 不可刪、整體下移 */
 (function () {
   var W = 1080, H = 1920;
 
@@ -22,14 +22,18 @@
     },
     stamp: { x: 756, y: 846, w: 218, rot: 4 },
     mark:  { x: 787, y: 977, w: 409, rot: 0 },
-    title: { cy: 400, w: 620 }
+    /* 郵戳日期：相對郵戳圖中心的偏移，size 為字級 */
+    markText: { x: -145, y: 0, size: 34, rot: 0 },
+    title: { cy: 400, w: 620 },
+    snap: 14, snapRot: 4,
+    topSafe: 56
   };
 
   var ICON = {
     bg: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
     pol: '<rect x="4" y="3" width="16" height="18" rx="2"/><rect x="7" y="6" width="10" height="9" rx="1"/>',
     reset: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
-    save: '<path d="M15 14l5-5-5-5"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/>',
+    share: '<path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M6 10H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1"/>',
     close: '<path d="M6 6l12 12M18 6L6 18"/>',
     zin: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6M11 8v6"/>',
     zout: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6"/>',
@@ -149,7 +153,6 @@
     ctx.fillText(txt, x, y);
   }
 
-  /* 機票文字，原點在機票中心 */
   function ticketText(ctx, tw, th, S) {
     var I = S.info;
     ctx.fillStyle = '#3b2a24'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
@@ -162,7 +165,12 @@
     put('date', I.date); put('extra', I.extra); put('seat', I.seat);
   }
 
-  /* ===== 物件模型 ===== */
+  /* 日期轉成 2025.07.18 */
+  function dotDate(s) {
+    var m = String(s || '').match(/(\d{4})-(\d{2})-(\d{2})/);
+    return m ? m[1] + '.' + m[2] + '.' + m[3] : '';
+  }
+
   function placePhotos(S) {
     var n = Math.max(1, Math.min(3, S.photos.length || 3)), L = CFG.layouts[n];
     S.els.forEach(function (e) {
@@ -190,8 +198,8 @@
     els.push({ k: 'mark', x: ox + mk.x, y: oy + mk.y, rot: mk.rot, sc: 1, vis: !!A.mark, w: mk.w,
                h: A.mark ? mk.w * A.mark.naturalHeight / A.mark.naturalWidth : mk.w, front: true });
     els.push({ k: 'title', x: W / 2, y: ti.cy, rot: 0, sc: 1, vis: !!A.title, w: ti.w,
-               h: A.title ? ti.w * A.title.naturalHeight / A.title.naturalWidth : ti.w * 0.3, front: true });
-    S.els = els; S.sel = null;
+               h: A.title ? ti.w * A.title.naturalHeight / A.title.naturalWidth : ti.w * 0.3, front: true, nodel: true });
+    S.els = els; S.sel = null; S.guides = [];
     placePhotos(S);
   }
 
@@ -240,6 +248,20 @@
       if (img) {
         if (e.k === 'stamp') { ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3; }
         ctx.drawImage(img, -w / 2, -h / 2, w, h);
+        ctx.shadowColor = 'transparent';
+        if (e.k === 'mark') {
+          var d = dotDate(S.info.date);
+          if (d) {
+            var T = CFG.markText;
+            ctx.save();
+            ctx.translate(T.x, T.y); ctx.rotate(T.rot * RAD);
+            ctx.globalAlpha = al * 0.9;
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.font = '700 ' + T.size + 'px ' + MONO;
+            ctx.fillText(d, 0, 0);
+            ctx.restore();
+          }
+        }
       }
     }
     ctx.restore();
@@ -255,7 +277,20 @@
     ctx.restore();
   }
 
-  /* ui=true 才畫選取框與缺圖提示（預覽用），匯出時 ui=false */
+  function drawGuides(ctx, S) {
+    if (!S.guides || !S.guides.length) return;
+    ctx.save();
+    ctx.strokeStyle = '#ff2d78'; ctx.lineWidth = 3; ctx.setLineDash([]);
+    ctx.shadowColor = 'rgba(255,45,120,.6)'; ctx.shadowBlur = 8;
+    S.guides.forEach(function (g) {
+      ctx.beginPath();
+      if (g === 'v') { ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); }
+      else { ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); }
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
   function draw(ctx, p, S, ui) {
     var A = S.A;
     ctx.clearRect(0, 0, W, H);
@@ -276,21 +311,38 @@
     if (A.pre) ctx.drawImage(A.pre, S.env.ox, S.env.oy, S.env.ew, S.env.eh);
     S.els.filter(function (e) { return e.front; }).forEach(function (e) { drawEl(ctx, e, S, p); });
     if (ui && S.sel && S.sel.vis) frame(ctx, S.sel);
+    if (ui) drawGuides(ctx, S);
+  }
+
+  /* 拖曳吸附：回傳要顯示的參考線 */
+  function snapMove(e) {
+    var g = [];
+    if (Math.abs(e.x - W / 2) < CFG.snap) { e.x = W / 2; g.push('v'); }
+    if (Math.abs(e.y - H / 2) < CFG.snap) { e.y = H / 2; g.push('h'); }
+    return g;
+  }
+  function snapRot(e) {
+    var r = ((e.rot % 360) + 360) % 360, hit = false;
+    [0, 90, 180, 270, 360].forEach(function (a) {
+      if (Math.abs(r - a) < CFG.snapRot) { e.rot = a % 360; hit = true; }
+    });
+    return hit;
   }
 
   window.ssOpen = async function (id, info) {
     if (document.getElementById('ss-mask')) return;
     var S = {
-      A: await getAssets(), bg: null, photos: [], els: [], sel: null, env: null,
+      A: await getAssets(), bg: null, photos: [], els: [], sel: null, env: null, guides: [],
       info: Object.assign({ name: '', from: '', to: '', date: '', extra: '', seat: '', title: '' }, info || {})
     };
     build(S);
 
     var mask = document.createElement('div');
     mask.id = 'ss-mask';
-    mask.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;';
+    mask.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.65);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;padding:calc(' + CFG.topSafe + 'px + env(safe-area-inset-top)) 0 calc(10px + env(safe-area-inset-bottom));box-sizing:border-box;';
 
-    var scale = Math.min((window.innerWidth - 24) / W, (window.innerHeight - 170) / H);
+    var availH = window.innerHeight - CFG.topSafe - 10 - 42 - 8 - 46 - 8 - 24;
+    var scale = Math.min((window.innerWidth - 24) / W, availH / H);
     var cv = newCanvas(W, H);
     cv.style.cssText = 'width:' + (W * scale) + 'px;height:' + (H * scale) + 'px;border-radius:16px;flex:none;touch-action:none;background:linear-gradient(180deg,#cdb99f,#a8927a);';
     var cx = cv.getContext('2d');
@@ -307,7 +359,6 @@
     }
     function still() { cancelAnimationFrame(raf); draw(cx, 1e9, S, true); }
 
-    /* ===== 按鈕 ===== */
     function iconBtn(parent, icon, label, primary, size) {
       var b = document.createElement('button');
       b.title = label; b.setAttribute('aria-label', label);
@@ -316,7 +367,6 @@
       parent.appendChild(b); return b;
     }
 
-    /* 選取物件的工具列（沒選取時隱藏但保留位置，畫面不會跳動） */
     var bar = document.createElement('div');
     bar.style.cssText = 'display:flex;gap:8px;justify-content:center;flex:none;visibility:hidden;';
     var bZout = iconBtn(bar, ICON.zout, '縮小', false, 42);
@@ -328,16 +378,16 @@
     function syncBar() {
       bar.style.visibility = S.sel ? 'visible' : 'hidden';
       bEdit.style.display = S.sel && S.sel.k === 'ticket' ? 'flex' : 'none';
+      bDel.style.display = S.sel && S.sel.nodel ? 'none' : 'flex';
     }
     function clampSc(v) { return Math.max(0.3, Math.min(3, v)); }
     bZin.onclick = function () { if (S.sel) { S.sel.sc = clampSc(S.sel.sc * 1.1); still(); } };
     bZout.onclick = function () { if (S.sel) { S.sel.sc = clampSc(S.sel.sc / 1.1); still(); } };
     bRl.onclick = function () { if (S.sel) { S.sel.rot -= 10; still(); } };
     bRr.onclick = function () { if (S.sel) { S.sel.rot += 10; still(); } };
-    bDel.onclick = function () { if (S.sel) { S.sel.vis = false; S.sel = null; syncBar(); still(); } };
+    bDel.onclick = function () { if (S.sel && !S.sel.nodel) { S.sel.vis = false; S.sel = null; syncBar(); still(); } };
     bEdit.onclick = function () { openTicket(); };
 
-    /* ===== 手勢：單指拖曳、雙指縮放旋轉 ===== */
     var ptrs = {}, g = null;
     function pt(e) {
       var r = cv.getBoundingClientRect();
@@ -364,7 +414,11 @@
       if (!g || !g.el) return;
       if (g.mode === 'drag') {
         if (!g.moved && Math.hypot(q.x - g.sx, q.y - g.sy) > 12) g.moved = true;
-        if (g.moved) { g.el.x += q.x - g.lx; g.el.y += q.y - g.ly; still(); }
+        if (g.moved) {
+          g.el.x += q.x - g.lx; g.el.y += q.y - g.ly;
+          S.guides = snapMove(g.el);
+          still();
+        }
         g.lx = q.x; g.ly = q.y;
       } else if (g.mode === 'pinch') {
         var ids = Object.keys(ptrs);
@@ -372,6 +426,7 @@
         var a = ptrs[ids[0]], b = ptrs[ids[1]];
         g.el.sc = clampSc(g.sc0 * Math.hypot(b.x - a.x, b.y - a.y) / g.d0);
         g.el.rot = g.r0 + (Math.atan2(b.y - a.y, b.x - a.x) - g.a0) / RAD;
+        snapRot(g.el);
         still();
       }
     };
@@ -382,10 +437,10 @@
         if (g.el && g.el.k === 'ticket' && g.was) openTicket();
       }
       if (left === 0 || (g && g.mode === 'pinch')) g = null;
+      if (left === 0) { S.guides = []; still(); }
     }
     cv.onpointerup = up; cv.onpointercancel = up;
 
-    /* ===== 編輯機票：全螢幕頁 ===== */
     function openTicket() {
       still();
       var ov = document.createElement('div');
@@ -431,7 +486,6 @@
       document.body.appendChild(ov);
     }
 
-    /* ===== 主按鈕列 ===== */
     var row = document.createElement('div');
     row.style.cssText = 'display:flex;gap:10px;justify-content:center;flex:none;';
     function picker(multi, cb) {
@@ -469,7 +523,7 @@
     iconBtn(row, ICON.reset, '重設排版', false, 46).onclick = function () {
       build(S); syncBar(); play();
     };
-    iconBtn(row, ICON.save, '儲存 / 分享', true, 46).onclick = async function () {
+    iconBtn(row, ICON.share, '儲存 / 分享', true, 46).onclick = async function () {
       var c = newCanvas(W, H);
       draw(c.getContext('2d'), 1e9, S, false);
       var blob = await new Promise(function (r) { c.toBlob(r, 'image/png'); });
