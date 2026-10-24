@@ -23,7 +23,7 @@
     stamp: { x: 756, y: 846, w: 218, rot: 4 },
     mark:  { x: 787, y: 977, w: 409, rot: 0 },
     /* 郵戳日期：相對郵戳圖中心的偏移，size 為字級 */
-    markText: { x: -60, y: 0, size: 38, rot: 0 },
+    markText: { x: -80, y: 0, size: 38, rot: 0 },
     title: { cy: 400, w: 620 },
     snap: 14, snapRot: 4,
     topSafe: 96
