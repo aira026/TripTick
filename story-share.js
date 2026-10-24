@@ -436,55 +436,74 @@
       delete ptrs[e.pointerId];
       var left = Object.keys(ptrs).length;
       if (g && g.mode === 'drag' && !g.moved && left === 0) {
-        if (g.el && g.el.k === 'ticket' && g.was) openTicket();
+         if (g.el && g.el.k === 'ticket') openTicket();
       }
       if (left === 0 || (g && g.mode === 'pinch')) g = null;
       if (left === 0) { S.guides = []; still(); }
     }
     cv.onpointerup = up; cv.onpointercancel = up;
 
-    function openTicket() {
+        function openTicket() {
       still();
       var ov = document.createElement('div');
-      ov.style.cssText = 'position:fixed;inset:0;z-index:3100;background:#1d1612;display:flex;flex-direction:column;';
+      ov.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100dvh;z-index:3100;background:rgba(20,14,10,.95);display:flex;flex-direction:column;box-sizing:border-box;padding-top:env(safe-area-inset-top);';
       var tw = 1000, th = S.A.tk ? tw * S.A.tk.naturalHeight / S.A.tk.naturalWidth : 280;
-      var top = document.createElement('div');
-      top.style.cssText = 'flex:none;padding:calc(14px + env(safe-area-inset-top)) 16px 12px;display:flex;justify-content:center;';
+      var editing = false;
+
+      var head = document.createElement('div');
+      head.style.cssText = 'flex:none;display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;';
+      var bE = iconBtn(head, ICON.edit, '編輯文字', false, 44);
+      var bX = iconBtn(head, ICON.close, '關閉', false, 44);
+      ov.appendChild(head);
+
+      var stage = document.createElement('div');
+      stage.style.cssText = 'flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 16px;';
       var tc = newCanvas(tw, th);
-      tc.style.cssText = 'display:block;width:min(100%,460px);height:auto;border-radius:10px;';
+      tc.style.cssText = 'display:block;width:min(100%,520px);height:auto;border-radius:10px;opacity:0;transform:scale(.55);transition:transform .35s ease,opacity .25s;box-shadow:0 12px 40px rgba(0,0,0,.5);';
       function paint() {
         var x = tc.getContext('2d'); x.clearRect(0, 0, tw, th);
         if (S.A.tk) x.drawImage(S.A.tk, 0, 0, tw, th);
         x.save(); x.translate(tw / 2, th / 2); ticketText(x, tw, th, S); x.restore();
       }
       paint();
-      top.appendChild(tc); ov.appendChild(top);
+      stage.appendChild(tc); ov.appendChild(stage);
+      requestAnimationFrame(function () { tc.style.opacity = '1'; tc.style.transform = 'scale(1)'; });
 
       var form = document.createElement('div');
-      form.style.cssText = 'flex:1;min-height:0;overflow-y:auto;padding:4px 16px 16px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-content:start;';
-      var keys = [['name', '旅客 PASSENGER', 1], ['to', '目的地 DESTINATION', 1],
-                  ['date', '日期時間 DATE & TIME', 2],
-                  ['from', '航班 FLIGHT', 1], ['seat', '座位 SEAT', 1],
-                  ['extra', 'SHELF', 2]];
+      form.style.cssText = 'display:none;flex:1;min-height:0;overflow-y:auto;padding:4px 16px 12px;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-content:start;';
+      var keys = [['name', '旅客', 1], ['to', '目的地', 1], ['date', '日期時間', 2],
+                  ['from', '航班', 1], ['seat', '座位', 1], ['extra', 'SHELF', 2]];
       keys.forEach(function (k) {
         var lab = document.createElement('label');
-        lab.style.cssText = 'display:flex;flex-direction:column;gap:5px;min-width:0;color:#e9dccb;font-size:12px;' + (k[2] === 2 ? 'grid-column:1 / -1;' : '');
+        lab.style.cssText = 'display:flex;flex-direction:column;gap:3px;min-width:0;color:#e9dccb;font-size:11px;' + (k[2] === 2 ? 'grid-column:1 / -1;' : '');
         lab.textContent = k[1];
         var inp = document.createElement('input');
         inp.value = S.info[k[0]] || '';
-        inp.style.cssText = 'width:100%;box-sizing:border-box;padding:11px 12px;border:0;border-radius:10px;font-size:16px;background:#fff;color:#111;';
+        inp.style.cssText = 'width:100%;box-sizing:border-box;padding:8px 10px;border:0;border-radius:10px;font-size:16px;background:#fff;color:#111;';
         inp.oninput = function () { S.info[k[0]] = inp.value; paint(); still(); };
         lab.appendChild(inp); form.appendChild(lab);
       });
       ov.appendChild(form);
 
       var foot = document.createElement('div');
-      foot.style.cssText = 'flex:none;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.12);';
+      foot.style.cssText = 'display:none;flex:none;padding:10px 16px calc(10px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.12);';
       var ok = document.createElement('button');
       ok.textContent = '完成';
-      ok.style.cssText = 'width:100%;padding:14px;border:0;border-radius:99px;background:#fff;color:#111;font-size:16px;font-weight:600;';
-      ok.onclick = function () { if (ov.parentNode) ov.parentNode.removeChild(ov); still(); };
+      ok.style.cssText = 'width:100%;padding:12px;border:0;border-radius:99px;background:#fff;color:#111;font-size:16px;font-weight:600;';
       foot.appendChild(ok); ov.appendChild(foot);
+
+      function setEdit(on) {
+        editing = on;
+        form.style.display = on ? 'grid' : 'none';
+        foot.style.display = on ? 'block' : 'none';
+        stage.style.flex = on ? 'none' : '1';
+        stage.style.paddingBottom = on ? '8px' : '0';
+      }
+      function closeV() { if (ov.parentNode) ov.parentNode.removeChild(ov); still(); }
+      bE.onclick = function () { setEdit(!editing); };
+      ok.onclick = function () { setEdit(false); };
+      bX.onclick = closeV;
+      stage.onclick = function (e) { if (!editing && e.target === stage) closeV(); };
       document.body.appendChild(ov);
     }
 
@@ -553,4 +572,13 @@
     document.body.appendChild(mask);
     play();
   };
+    var SEND = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>';
+  function fixIcons() {
+    document.querySelectorAll('[data-a="ss-open"]').forEach(function (b) {
+      if (b.dataset.ssi === '1') return;
+      b.dataset.ssi = '1'; b.innerHTML = SEND;
+    });
+  }
+  fixIcons();
+  new MutationObserver(fixIcons).observe(document.documentElement, { childList: true, subtree: true });
 })();
