@@ -1164,3 +1164,63 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
   case"aipasteclip":{if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(tx=>{if(!tx||!tx.trim())return toast("剪貼簿是空的，請先複製 AI 的回覆");const j=$("#ai-json");if(j)j.value=tx;showPlan(tx)}).catch(()=>{toast("無法讀取剪貼簿，請在「手動貼上」貼入");const d=document.querySelector("#ai-act details");if(d)d.open=true})}else{toast("請在「手動貼上」貼入回覆");const d=document.querySelector("#ai-act details");if(d)d.open=true}break}
   case"locshare":{const t=T0();if(!t)break;if(!me)return toast("請先登入");if(locOn(t.id)){stopShare(t,true);toast("已停止分享位置")}else if(confirm("開啟後，你的即時位置會顯示給這趟行程的所有成員。要開啟嗎？"))startShare(t);break}
  }});
+// 把 day.date（"1/15（五）" 或 "2027-01-15"）轉成 "YYYY-MM-DD"
+// 年份從 startDate～endDate 推得，所以跨年行程（12/31 → 1/1）也正確
+function getDayDateStr(trip, day) {
+  if (!day || typeof day.date !== 'string') return null;
+  const iso = /^(\d{4}-\d{2}-\d{2})/.exec(day.date);
+  if (iso) return iso[1];
+  const m = /^\s*(\d{1,2})\/(\d{1,2})/.exec(day.date); // 只認開頭的 月/日，不做子字串比對
+  if (!m) return null;
+  const s = parseYMD(trip.startDate), e = parseYMD(trip.endDate);
+  if (s === null || e === null) return null;
+  const pad = n => String(n).padStart(2, '0');
+  const y0 = new Date(s * DAY_MS).getUTCFullYear();
+  const y1 = new Date(e * DAY_MS).getUTCFullYear();
+  for (let y = y0; y <= y1; y++) {
+    const str = `${y}-${pad(m[1])}-${pad(m[2])}`;
+    const t = parseYMD(str);
+    if (t !== null && t >= s && t <= e) return str;
+  }
+  return null;
+}
+
+function getTodayItems(trip, todayStr) {
+  if (!trip || !Array.isArray(trip.days)) return [];
+  if (getTripStatus(trip, todayStr) !== 'ongoing') return [];
+  const dates = trip.days.map(d => getDayDateStr(trip, d));
+  let day;
+  if (dates.some(Boolean)) {
+    // 有日期就只信日期，不退而求其次，避免排錯天
+    day = trip.days[dates.indexOf(todayStr)];
+  } else {
+    // 完全沒有可解析的日期：用「距出發第幾天」對應
+    day = trip.days[parseYMD(todayStr) - parseYMD(trip.startDate)];
+  }
+  return day && Array.isArray(day.items) ? day.items : [];
+  // getTodayItems
+  let extra = 0;
+  const eq = (name, got, want) => {
+    extra++;
+    if (JSON.stringify(got) !== JSON.stringify(want)) { fail++; console.error(`✗ ${name}: 期望 ${JSON.stringify(want)}，得到 ${JSON.stringify(got)}`); }
+  };
+  const real = { startDate: '2027-01-15', endDate: '2027-01-17', days: [
+    { date: '1/15（五）', items: ['A'] }, { date: '1/16（六）', items: ['B'] }, { date: '1/17（日）', items: [] }] };
+  const cross = { startDate: '2026-12-30', endDate: '2027-01-02', days: [
+    { date: '12/30（三）', items: ['A'] }, { date: '12/31（四）', items: ['B'] },
+    { date: '1/1（五）', items: ['C'] }, { date: '1/2（六）', items: ['D'] }] };
+  const iso = { startDate: '2026-10-28', endDate: '2026-10-30', days: [
+    { date: '2026-10-28', items: ['A'] }, { date: '2026-10-29', items: ['B'] }] };
+  const noDate = { startDate: '2026-10-28', endDate: '2026-10-30', days: [
+    { items: ['A'] }, { items: ['B'] }, { items: ['C'] }] };
+  eq('M/D 第一天', getTodayItems(real, '2027-01-15'), ['A']);
+  eq('M/D 中間天', getTodayItems(real, '2027-01-16'), ['B']);
+  eq('當天沒排景點', getTodayItems(real, '2027-01-17'), []);
+  eq('出發前回空', getTodayItems(real, '2027-01-10'), []);
+  eq('跨年 12/31', getTodayItems(cross, '2026-12-31'), ['B']);
+  eq('跨年 1/1', getTodayItems(cross, '2027-01-01'), ['C']);
+  eq('ISO 日期', getTodayItems(iso, '2026-10-29'), ['B']);
+  eq('ISO 當天沒排', getTodayItems(iso, '2026-10-30'), []);
+  eq('無日期依序對應', getTodayItems(noDate, '2026-10-29'), ['B']);
+  console.log(fail ? `❌ ${fail} 項失敗` : `✅ 全部通過（${cases.length + extra} 項）`);
+}
