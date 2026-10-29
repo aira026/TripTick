@@ -25,6 +25,10 @@
 </header>
 <aside class="drawer" id="drawer" aria-label="目錄"></aside><div class="scrim" id="scrim" data-a="menu"></div>
 <main>
+<section id="t-today" class="panel" aria-label="今天"></section>
+<section id="t-more" class="panel" aria-label="更多"><div class="more-list">
+<button data-bn="storm">備忘錄</button><button data-bn="pack">打包清單</button><button data-bn="yen">帳本與匯率</button>
+<p class="meta">旅伴、匯出：之後加入</p></div></section>
 <section id="t-now" class="panel" aria-label="行程總覽"></section>
 <section id="t-current" class="panel on" aria-label="當前行程"></section>
 <section id="t-tix" class="panel" aria-label="票券與預約"></section>
@@ -35,6 +39,13 @@
 <section id="t-past" class="panel" aria-label="歷史旅程"><div id="l-past"></div><div class="pills addrow addfab"><button class="pill" data-a="add" data-v="past">＋</button></div></section>
 <section id="t-future" class="panel" aria-label="未來清單"><div class="pills addrow"><button class="pill" data-a="add" data-v="future"><span class="dot">＋</span>新增旅程</button></div><div class="grid" id="l-future"></div></section>
 </main>
+<nav class="bnav" id="bnav" aria-label="行程導覽">
+<button data-bn="today"><i class="ic ic-nav"></i>今天</button>
+<button data-bn="now"><i class="ic ic-cal"></i>行程</button>
+<button data-bn="add" class="bn-add" aria-label="記一筆">＋</button>
+<button data-bn="tix"><i class="ic ic-card"></i>票券</button>
+<button data-bn="more"><i class="ic ic-note"></i>更多</button>
+</nav>
 <div id="modal" class="modal"><div class="sheet glass" id="sheet"></div></div><div id="toast" class="toast"></div>
 
 <!-- 歡迎頁 -->

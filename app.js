@@ -52,7 +52,7 @@ function acct(t,L,r){const c=cfg(t),S=settle({members:c.members,all:[...c.member
  <h4 class="meta" style="margin:12px 0 2px">明細</h4>${L.map((e,i)=>`<div class="row"><span>${esc(e.item)}<br><small class="meta">${esc(lbl(t,e.paidBy))} 付</small></span><b>${fmt(e.amount,cur)}</b><button class="x ed" data-a="delex" data-v="${i}" aria-label="刪除"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`).join("")||'<p class="meta">尚無明細</p>'}`}
 /* --- Hokkaido sub pages --- */
 const T0=()=>visible().find(x=>x.status==="now");
-let cur="current";const LB={now:"行程總覽",tix:"票券與預約",storm:"備忘錄",yen:"匯率與帳本",pack:"打包清單",map:"全球足跡",past:"歷史旅程",future:"未來清單",current:"當前行程"};const SUB=["now","tix","storm","yen","pack"];
+let cur="current";const LB={today:"今天",more:"更多",now:"行程總覽",tix:"票券與預約",storm:"備忘錄",yen:"匯率與帳本",pack:"打包清單",map:"全球足跡",past:"歷史旅程",future:"未來清單",current:"當前行程"};const SUB=["today","now","tix","storm","yen","pack"];
 const RATES={JPY:.21,KRW:.024,THB:.9,USD:32,EUR:35,CHF:36,TWD:1};
 const curOf=()=>{const t=T0();return t?cfg(t).currency:"JPY"};
 const rate=()=>parseFloat(load("tp-rate-"+curOf()))||RATES[curOf()]||1;
@@ -678,6 +678,7 @@ async function saveForm(){if(!me)return toast("請先登入");
 function render(){const v=visible(),by=s=>v.filter(t=>t.status===s);zm=null;
  renderNow(by("now")[0]);
   if(cur==="current")renderCurrent(by("now")[0]);
+  if(cur==="today")renderToday();
  const real=v.filter(t=>t.status!=="future");
  $("#stats").innerHTML=`<div class="glass stat"><b>${new Set(real.map(t=>t.countryCode||t.country)).size}</b><small>造訪國家</small></div><div class="glass stat"><b>${real.reduce((s,t)=>s+nd(t),0)}</b><small>總天數</small></div><div class="glass stat"><b>${real.length}</b><small>趟旅行</small></div>`;
  MapView.render(v);if(cur==="map")MapView.refresh();
@@ -790,12 +791,44 @@ document.addEventListener("input",e=>{if(e.target.id==="jpy"||e.target.id==="rat
 document.addEventListener("change",e=>{const c=e.target.closest("input[data-k]"),t=T0();if(!c||!t)return;const P=plist(t);P[c.dataset.k][+c.dataset.i].d=c.checked?1:0;savePl(t,P);c.closest(".ck").classList.toggle("done",c.checked)});
 
 document.addEventListener("change",e=>{const i=e.target.closest("input[data-b]"),t=T0();if(!i||!t)return;const L=bkList(t);L[+i.dataset.i][i.dataset.b]=i.value.trim();saveBk(t,L)});
-function go(id){setEdit(false);cur=id;document.body.classList.remove("dr");document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("on",p.id==="t-"+id));renderDrawer();window.scrollTo({top:0});if(id==="map")MapView.refresh();if(id==="now"||id==="current")MiniMap.refresh();if(id==="current")renderCurrent(T0())}
-const ICN={now:"cal",tix:"card",storm:"note",yen:"yen",pack:"chk",map:"globe",past:"clock",future:"compass",current:"nav"};
+function go(id){setEdit(false);cur=id;document.body.classList.remove("dr");document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("on",p.id==="t-"+id));renderDrawer();window.scrollTo({top:0});if(id==="map")MapView.refresh();if(id==="now"||id==="current")MiniMap.refresh();if(id==="current")renderCurrent(T0());if(id==="today")renderToday();updateBnav()}
+const ICN={today:"clock",now:"cal",tix:"card",storm:"note",yen:"yen",pack:"chk",map:"globe",past:"clock",future:"compass",current:"nav"};
 function renderDrawer(){const t=T0(),nm=t?(t.short||t.title):"",b=(id,c)=>`<button class="${c} ${cur===id?"on":""}" data-t="${id}"><i class="ic ic-${ICN[id]}"></i>${LB[id]}</button>`;
  $("#drawer").innerHTML=`<p class="eyebrow brand" data-a="home">TripTick</p><h2 class="brand" data-a="home">歷歷</h2><button data-t="current" class="${cur==="current"?"on":""}"><i class="ic ic-nav"></i>當前行程</button><p class="grp"><i class="ic ic-pin"></i>當前旅程　${t?esc(nm):"（目前沒有）"}</p>${t?SUB.map(i=>b(i,"sub")).join(""):""}<p class="grp">其他旅程</p>${["map","past","future"].map(i=>b(i,"")).join("")}${drawerExtra()}<p class="meta" style="margin-top:auto">資料儲存在你的 Google 帳戶。</p>`;
  $("#crumb").textContent=cur==="current"?"當前行程":(SUB.includes(cur)?`${t?nm:"當前旅程"} › ${LB[cur]}`:LB[cur])}
 
+/* ===== 行程內底部導覽（5 格）===== */
+const BN_PAGES=["today","now","tix","storm","yen","pack","more"];
+const BN_GROUP={storm:"more",yen:"more",pack:"more"};
+function updateBnav(){
+  document.body.classList.toggle("has-bnav",BN_PAGES.includes(cur));
+  const g=BN_GROUP[cur]||cur;
+  document.querySelectorAll("#bnav [data-bn]").forEach(b=>b.classList.toggle("on",b.dataset.bn===g));
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-bn]");if(!b)return;
+  const k=b.dataset.bn;
+  if(k==="add"){toast("記一筆：步驟 3 再做");return}
+  go(k);
+});
+// 今天分頁：四種狀態先放佔位。測試用：在 Console 設 window.__TODAY="2027-01-16" 再 go("today")
+function renderToday(){
+  const el=$("#t-today");if(!el)return;
+  const today=window.__TODAY||getLocalDateStr(),t=T0();
+  const card=(h,p)=>`<div class="today-card"><h2>${h}</h2><p>${p}</p></div>`;
+  if(!t){el.innerHTML=card("目前沒有行程","到首頁新增或選擇一個行程。");return}
+  const st=getTripStatus(t,today);let html;
+  if(st==="ongoing"){
+    const it=getTodayItems(t,today);
+    html=it.length?card("下一站（佔位）",esc(it[0].h||"")+(it[0].t?`　${esc(it[0].t)}`:"")):card("今天沒排","附近待選點＋「今天去這個」（佔位）");
+  }else if(st==="ended"){
+    html=card("旅程結束","回憶摘要＋提示歸檔（佔位）");
+  }else{
+    const s=parseYMD(t.startDate);
+    html=s===null?card("尚未設定出發日期","設定出發日期（佔位）"):card(`${s-parseYMD(today)} 天後出發`,"出發倒數＋待辦（佔位）");
+  }
+  el.innerHTML=`<p class="eyebrow">${st}</p>`+html;
+}
 /* ---- auth / invite / template / migration ---- */
 const emptyNow0=()=>!FB_OK?`<div class="glass blk"><p>${FB_LOAD?"尚未設定 Firebase。請依說明填入 firebase-config.js 後重新整理。":"目前離線，且這台裝置還沒有行程快照。請連線並登入一次，之後就能離線查看。"}</p></div>`:me?'<div class="glass blk"><p>無當前行程，請新增行程或輸入邀請碼</p><div class="pills"><button class="pill" data-a="add" data-v="now"><span class="dot">＋</span>新增行程</button><button class="pill gl" data-a="join">輸入邀請碼</button><button class="pill gl" data-a="tpl">匯入範例：北海道</button></div></div>':'<div class="glass blk"><p>無當前行程，請登入後新增行程或輸入邀請碼</p><div class="pills"><button class="pill" data-a="auth">Google 一鍵登入</button></div></div>';
 const guide=()=>me&&!TRIPS.length?'<div class="glass blk guide"><b>快速開始</b><ol><li>新增行程，或向朋友索取邀請碼加入。</li><li>在行程裡新增每日景點，並填寫「地點」，地圖就會自動標出位置。</li><li>出發前在有網路時登入並載入一次，之後離線也能查看。</li></ol></div>':"";
