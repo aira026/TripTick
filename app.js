@@ -1268,5 +1268,5 @@ function runTripLogicTests() {
   eq('ISO 當天沒排', getTodayItems(iso, '2026-10-30'), []);
   eq('無日期依序對應', getTodayItems(noDate, '2026-10-29'), ['B']);
 
-  console.log(fail ? `❌ ${fail} 項失敗` : `✅ 全部通過（共 12 項檢測）`);
+    console.log(fail ? `❌ ${fail} 項失敗` : `✅ 全部通過（${cases.length + extra} 項）`);
 }
