@@ -1166,6 +1166,13 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
  }});
 // === 以下是步驟 1 的工具函式 ===
 
+function getLocalDateStr(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function parseYMD(str) {
   if (!str || typeof str !== 'string') return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
@@ -1174,23 +1181,20 @@ function parseYMD(str) {
   const t = Date.UTC(y, mo, d);
   const dt = new Date(t);
   if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo || dt.getUTCDate() !== d) return null;
-  return t;
+  return Math.round(t / DAY_MS);
 }
 
 const DAY_MS = 86400000;
 
 function getTripStatus(trip, todayStr) {
-  if (!trip || !trip.startDate || !trip.endDate) return 'planning';
-  const s = parseYMD(trip.startDate);
-  const e = parseYMD(trip.endDate);
+  const s = parseYMD(trip && trip.startDate);
+  const e = parseYMD(trip && trip.endDate);
   const t = parseYMD(todayStr);
   if (s === null || e === null || t === null) return 'planning';
   if (e < s) return 'planning';
   if (t >= s && t <= e) return 'ongoing';
   if (t > e) return 'ended';
-  const diff = Math.floor((s - t) / DAY_MS);
-  if (diff >= 1 && diff <= 30) return 'upcoming';
-  return 'planning';
+  return (s - t) <= 30 ? 'upcoming' : 'planning'; // parseYMD 已回傳天數，此時 s - t ≥ 1
 }
 
 function getDayDateStr(trip, day) {
@@ -1270,3 +1274,11 @@ function runTripLogicTests() {
 
     console.log(fail ? `❌ ${fail} 項失敗` : `✅ 全部通過（${cases.length + extra} 項）`);
 }
+
+// 供 Console 測試用（module 內的函式不會自動進全域）
+window.getTripStatus = getTripStatus;
+window.getTodayItems = getTodayItems;
+window.runTripLogicTests = runTripLogicTests;
+window.getLocalDateStr = getLocalDateStr;
+window.getDayDateStr = getDayDateStr;
+window.parseYMD = parseYMD;
