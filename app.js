@@ -52,7 +52,7 @@ function acct(t,L,r){const c=cfg(t),S=settle({members:c.members,all:[...c.member
  <h4 class="meta" style="margin:12px 0 2px">明細</h4>${L.map((e,i)=>`<div class="row"><span>${esc(e.item)}<br><small class="meta">${esc(lbl(t,e.paidBy))} 付</small></span><b>${fmt(e.amount,cur)}</b><button class="x ed" data-a="delex" data-v="${i}" aria-label="刪除"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`).join("")||'<p class="meta">尚無明細</p>'}`}
 /* --- Hokkaido sub pages --- */
 const T0=()=>visible().find(x=>x.status==="now");
-let cur="current";const LB={today:"今天",more:"更多",now:"行程總覽",tix:"票券與預約",storm:"備忘錄",yen:"匯率與帳本",pack:"打包清單",map:"全球足跡",past:"歷史旅程",future:"未來清單",current:"當前行程"};const SUB=["today","now","tix","storm","yen","pack"];
+let cur="current";const LB={today:"今天",more:"更多",now:"行程總覽",tix:"票券與預約",storm:"備忘錄",yen:"匯率與帳本",pack:"打包清單",map:"全球足跡",past:"歷史旅程",future:"未來清單",current:"當前行程"};const SUB=["now","tix","storm","yen","pack"];
 const RATES={JPY:.21,KRW:.024,THB:.9,USD:32,EUR:35,CHF:36,TWD:1};
 const curOf=()=>{const t=T0();return t?cfg(t).currency:"JPY"};
 const rate=()=>parseFloat(load("tp-rate-"+curOf()))||RATES[curOf()]||1;
@@ -798,8 +798,8 @@ function renderDrawer(){const t=T0(),nm=t?(t.short||t.title):"",b=(id,c)=>`<butt
  $("#crumb").textContent=cur==="current"?"當前行程":(SUB.includes(cur)?`${t?nm:"當前旅程"} › ${LB[cur]}`:LB[cur])}
 
 /* ===== 行程內底部導覽（5 格）===== */
-const BN_PAGES=["today","now","tix","storm","yen","pack","more"];
-const BN_GROUP={storm:"more",yen:"more",pack:"more"};
+const BN_PAGES=["current","today","now","tix","storm","yen","pack","more"];
+const BN_GROUP={current:"today",storm:"more",yen:"more",pack:"more"};
 function updateBnav(){
   document.body.classList.toggle("has-bnav",BN_PAGES.includes(cur));
   const g=BN_GROUP[cur]||cur;
@@ -808,14 +808,14 @@ function updateBnav(){
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-bn]");if(!b)return;
   const k=b.dataset.bn;
-  if(k==="add"){toast("記一筆：步驟 3 再做");return}
+  if(k==="add"){toast("記帳：步驟 3 再做");return}
   go(k);
 });
 // 今天分頁：四種狀態先放佔位。測試用：在 Console 設 window.__TODAY="2027-01-16" 再 go("today")
 function renderToday(){
   const el=$("#t-today");if(!el)return;
   const today=window.__TODAY||getLocalDateStr(),t=T0();
-  const card=(h,p)=>`<div class="today-card"><h2>${h}</h2><p>${p}</p></div>`;
+  const card=(h,p)=>`<div class="glass blk"><h3 class="today-h">${h}</h3><p>${p}</p></div>`;
   if(!t){el.innerHTML=card("目前沒有行程","到首頁新增或選擇一個行程。");return}
   const st=getTripStatus(t,today);let html;
   if(st==="ongoing"){
@@ -827,7 +827,8 @@ function renderToday(){
     const s=parseYMD(t.startDate);
     html=s===null?card("尚未設定出發日期","設定出發日期（佔位）"):card(`${s-parseYMD(today)} 天後出發`,"出發倒數＋待辦（佔位）");
   }
-  el.innerHTML=`<p class="eyebrow">${st}</p>`+html;
+  const SL={ongoing:"旅途中",upcoming:"即將出發",planning:"規劃中",ended:"已結束"};
+  el.innerHTML=`<p class="eyebrow">${SL[st]}</p>`+html;
 }
 /* ---- auth / invite / template / migration ---- */
 const emptyNow0=()=>!FB_OK?`<div class="glass blk"><p>${FB_LOAD?"尚未設定 Firebase。請依說明填入 firebase-config.js 後重新整理。":"目前離線，且這台裝置還沒有行程快照。請連線並登入一次，之後就能離線查看。"}</p></div>`:me?'<div class="glass blk"><p>無當前行程，請新增行程或輸入邀請碼</p><div class="pills"><button class="pill" data-a="add" data-v="now"><span class="dot">＋</span>新增行程</button><button class="pill gl" data-a="join">輸入邀請碼</button><button class="pill gl" data-a="tpl">匯入範例：北海道</button></div></div>':'<div class="glass blk"><p>無當前行程，請登入後新增行程或輸入邀請碼</p><div class="pills"><button class="pill" data-a="auth">Google 一鍵登入</button></div></div>';
