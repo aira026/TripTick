@@ -811,6 +811,21 @@ document.addEventListener("click",e=>{
   if(k==="add"){toast("記帳：步驟 3 再做");return}
   go(k);
 });
+// 導覽下滑收起：向下捲超過 40px 給 body 加 bnav-hide 讓導覽 translateY 滑出畫面；
+// 向上捲或回到頂部移除，過場 200ms；passive scroll 監聽，位移小於 8px 不觸發；
+// 彈層（modal / 抽屜 dr）開啟時不受此邏輯影響。
+(function(){
+  let lastY=0;
+  function popupOpen(){return $("#modal").classList.contains("on")||document.body.classList.contains("dr");}
+  addEventListener("scroll",()=>{
+    if(popupOpen())return;
+    const y=scrollY;
+    if(Math.abs(y-lastY)<8)return;
+    if(y>40&&y>lastY)document.body.classList.add("bnav-hide");
+    else if(y<=0||y<lastY)document.body.classList.remove("bnav-hide");
+    lastY=y;
+  },{passive:true});
+})();
 // 今天分頁：四種狀態先放佔位。測試用：在 Console 設 window.__TODAY="2027-01-16" 再 go("today")
 function renderToday(){
   const el=$("#t-today");if(!el)return;
