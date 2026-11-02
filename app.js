@@ -798,8 +798,8 @@ function renderDrawer(){const t=T0(),nm=t?(t.short||t.title):"",b=(id,c)=>`<butt
  $("#crumb").textContent=cur==="current"?"當前行程":(SUB.includes(cur)?`${t?nm:"當前旅程"} › ${LB[cur]}`:LB[cur])}
 
 /* ===== 行程內底部導覽（5 格）===== */
-const BN_PAGES=["current","today","now","tix","storm","yen","pack","more"];
-const BN_GROUP={current:"today",storm:"more",yen:"more",pack:"more"};
+const BN_PAGES=["today","now","tix","storm","yen","pack","more"];
+const BN_GROUP={storm:"more",yen:"more",pack:"more"};
 function updateBnav(){
   document.body.classList.toggle("has-bnav",BN_PAGES.includes(cur));
   const g=BN_GROUP[cur]||cur;
