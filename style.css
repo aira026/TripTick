@@ -756,8 +756,9 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
   font-size:1rem
 }
 .page-btn svg{width:20px;height:20px}
-.page-btn.pg-prev,.page-btn.pg-next{width:88px;height:88px}
-.page-btn.pg-prev svg,.page-btn.pg-next svg{width:34px;height:34px}
+.page-btn.pg-prev,.page-btn.pg-next,.page-btn.pg-auto{width:48px;height:48px}
+.page-btn.pg-prev svg,.page-btn.pg-next svg,.page-btn.pg-auto svg{width:20px;height:20px}
+.page-btn.pg-auto{border-color:#EADFCF;color:#FF7A00}
 .page-btn:active{transform:scale(.92)}
 .page-btn.active{
   border-color:#FF7A00;
