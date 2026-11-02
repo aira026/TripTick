@@ -816,16 +816,16 @@ function renderToday(){
   const el=$("#t-today");if(!el)return;
   const today=window.__TODAY||getLocalDateStr(),t=T0();
   const card=(h,p)=>`<div class="glass blk"><h3 class="today-h">${h}</h3><p>${p}</p></div>`;
-  if(!t){el.innerHTML=card("目前沒有行程","到首頁新增或選擇一個行程。");return}
+  if(!t){el.innerHTML=card("還沒有行程","來趟旅行吧！");return}
   const st=getTripStatus(t,today);let html;
   if(st==="ongoing"){
     const it=getTodayItems(t,today);
-    html=it.length?card("下一站（佔位）",esc(it[0].h||"")+(it[0].t?`　${esc(it[0].t)}`:"")):card("今天沒排","附近待選點＋「今天去這個」（佔位）");
+    html=it.length?card("下一站",esc(it[0].h||"")+(it[0].t?`　${esc(it[0].t)}`:"")):card("今天沒排","附近待選點＋「今天去這個」");
   }else if(st==="ended"){
-    html=card("旅程結束","回憶摘要＋提示歸檔（佔位）");
+    html=card("旅程結束","回憶摘要＋提示歸檔");
   }else{
     const s=parseYMD(t.startDate);
-    html=s===null?card("尚未設定出發日期","設定出發日期（佔位）"):card(`${s-parseYMD(today)} 天後出發`,"出發倒數＋待辦（佔位）");
+    html=s===null?card("尚未設定出發日期",esc(t.title||"")):card(`${s-parseYMD(today)} 天後出發`,esc(t.title||""));
   }
   const SL={ongoing:"旅途中",upcoming:"即將出發",planning:"規劃中",ended:"已結束"};
   el.innerHTML=`<p class="eyebrow">${SL[st]}</p>`+html;
