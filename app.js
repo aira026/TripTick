@@ -94,7 +94,7 @@ function renderNow(t){const ids=["now","tix","storm","yen","pack"],emp=emptyNow(
  const f={now:t=>bar(1)+nowCard(t),tix:t=>bar()+tixHTML(t),storm:t=>bar()+stormHTML(t),yen:t=>bar()+yenHTML(t),pack:t=>bar()+packHTML(t)};ids.forEach(i=>{$("#t-"+i).innerHTML=t?f[i](t):emp});calc();if(t){MiniMap.render("nowmap",ptsOf(t),pickPt);try{buildFood(t)}catch(e){}}}
 
 /* 當前行程：旅行當下專用頁 */
-let CUR_TRIP=null,CUR_REAL=-1;
+let CUR_TRIP=null,CUR_REAL=-1,CUR_EL=null;
 function renderCurrent(t, el=$("#t-current")){
   CUR_EL=el;
   const prevSvg='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>';
