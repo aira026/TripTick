@@ -95,17 +95,18 @@ function renderNow(t){const ids=["now","tix","storm","yen","pack"],emp=emptyNow(
 
 /* 當前行程：旅行當下專用頁 */
 let CUR_TRIP=null,CUR_REAL=-1;
-function renderCurrent(t){
+function renderCurrent(t, el=$("#t-current")){
+  CUR_EL=el;
   const prevSvg='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>';
   const nextSvg='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>';
   const autoSvg='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>';
   const pagRow='<div class="pagination-row"><button class="page-btn pg-prev" data-a="cprev" aria-label="上一站">'+prevSvg+'</button><button class="page-btn pg-auto active" data-a="creset" aria-label="回到當下">'+autoSvg+'</button><button class="page-btn pg-next" data-a="cnext" aria-label="下一站">'+nextSvg+'</button></div>';
   const shortRow='<div class="bottom-shortcuts-row"><a href="#" class="shortcut-card" data-a="m" data-v="diet"><span class="shortcut-text">飲食卡</span></a><a href="#" class="shortcut-card" data-a="m" data-v="sos"><span class="shortcut-text">緊急</span></a><a href="#" class="shortcut-card" data-a="goyen"><span class="shortcut-text">記帳</span></a></div>';
   const emp='<div class="triptick-live-home"><section class="trip-info-header"><h2>尚無行程</h2><p>請新增行程以查看當下資訊。</p></section>'+pagRow+shortRow+'</div>';
-  if(!t){$("#t-current").innerHTML=emp;CUR_TRIP=null;CUR_REAL=-1;return;}
+  if(!t){el.innerHTML=emp;CUR_TRIP=null;CUR_REAL=-1;return;}
   const D=getDays(t);
   const total=D.reduce((s,dd)=>s+((dd.items||[]).length),0);
-  if(!total){$("#t-current").innerHTML=emp;CUR_TRIP=null;CUR_REAL=-1;return;}
+  if(!total){el.innerHTML=emp;CUR_TRIP=null;CUR_REAL=-1;return;}
   const r=realPos(t);
   const pre=[];let acc=0;D.forEach(dd=>{pre.push(acc);acc+=(dd.items||[]).length});
   let rn=-1,rnxt=-1;
@@ -137,14 +138,14 @@ function renderCurrent(t){
   const nowTime=nowD.toLocaleTimeString("zh-TW",{hour:"2-digit",minute:"2-digit"});
   const newReal=realIdx(t);
   let prevIdx=-1;
-  const prevEl=document.querySelector("#t-current .trip-carousel");
+  const prevEl=el.querySelector(".trip-carousel");
   if(prevEl&&prevEl.children.length){const mid=prevEl.scrollLeft+prevEl.clientWidth/2;let best=0,bd=1e9;for(let i=0;i<prevEl.children.length;i++){const ce=prevEl.children[i];const dl=Math.abs((ce.offsetLeft+ce.offsetWidth/2)-mid);if(dl<bd){bd=dl;best=i}}prevIdx=best;}
   let target;
   if(t.id!==CUR_TRIP||prevIdx<0)target=newReal;
   else if(prevIdx===CUR_REAL)target=newReal;
   else target=Math.min(prevIdx,total-1);
   CUR_TRIP=t.id;CUR_REAL=newReal;
-  $("#t-current").innerHTML=`
+  el.innerHTML=`
     <div class="triptick-live-home">
       <section class="trip-info-header">
         <h2><a href="#" class="trip-title-link" data-a="gotnow">${esc(t.title)}</a></h2>
@@ -156,7 +157,7 @@ function renderCurrent(t){
       ${shortRow}
     </div>
   `;
-  const cont=document.querySelector("#t-current .trip-carousel");
+  const cont=el.querySelector(".trip-carousel");
   if(cont&&cont.children.length){const card=cont.children[Math.max(0,Math.min(target,cont.children.length-1))];if(card)cont.scrollLeft=card.offsetLeft-(cont.clientWidth-card.offsetWidth)/2;}
 }
 function realPos(t){
@@ -759,7 +760,7 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="goyen"){go("yen");return}
  if(a==="accday"){const sec=document.getElementById("dacc-"+v);if(sec){const o=sec.classList.toggle("open");b.setAttribute("aria-expanded",o)}return}
  if(a==="print"){document.body.classList.remove("dr");go("now");{const t0=T0();if(t0&&$("#dayblk"))$("#dayblk").innerHTML=getDays(t0).map((_,n)=>dayHTML(t0,n)).join("")}setTimeout(()=>{try{MiniMap.refresh()}catch(e){}setTimeout(()=>window.print(),350)},150);return}
- if(a==="cprev"||a==="cnext"||a==="creset"){curStep(a);return}
+ if(a==="cprev"||a==="cnext"||a==="creset"){if(t)renderCurrent(t,CUR_EL);return}
  if(a==="lvnext"||a==="lvprev"||a==="lvauto"){liveStep(a);return}
  if(a==="sosadd"){$("#sosrows").insertAdjacentHTML("beforeend",sosRow(["","",""]));return}
  if(a==="sosdel"){b.closest(".sosr").remove();return}
@@ -835,7 +836,8 @@ function renderToday(){
   const st=getTripStatus(t,today);let html;
   if(st==="ongoing"){
     const it=getTodayItems(t,today);
-    html=it.length?card("下一站",esc(it[0].h||"")+(it[0].t?`　${esc(it[0].t)}`:"")):card("今天沒排","附近待選點＋「今天去這個」");
+    if(it.length){renderCurrent(t,$("#t-today"));return;}
+    html=card("今天沒排","附近待選點＋「今天去這個」");
   }else if(st==="ended"){
     html=card("旅程結束","回憶摘要＋提示歸檔");
   }else{
