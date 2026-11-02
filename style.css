@@ -798,6 +798,7 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
 /* 當前行程頁面無底部懸浮導覽列 */
 #t-current{padding-bottom:0}
 #t-current .panel{padding-bottom:0}
+body.has-bnav #t-today,body.has-bnav #t-current{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 
 /* 行程內底部導覽（DESIGN.md v2） */
 .bnav{display:none;position:fixed;left:16px;right:16px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:3000;max-width:688px;margin:0 auto;padding:8px;gap:0;border-radius:28px;background:rgba(255,252,246,.78);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.85)}
