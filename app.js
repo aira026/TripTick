@@ -780,7 +780,7 @@ $("#modal").addEventListener("click",e=>{if(e.target.id==="modal"){storyClear();
  window.addEventListener("online",updBar);window.addEventListener("offline",updBar);
  try{TPL=(await (await fetch("trips.json")).json()).trips[0]}catch(e){}
  if(FB_OK){loadFeatured();handleParams()}
- if(FB_OK)onAuthStateChanged(auth,u=>{me=u;AUTHREADY=true;$("#bnav").hidden=!u;if(!u){TRIPS=[];SNAP=null;if(navigator.onLine)purgeLocal()}if(unsub){unsub();unsub=null}
+ if(FB_OK)onAuthStateChanged(auth,u=>{me=u;AUTHREADY=true;$("#bnav").hidden=!u;if(!u){TRIPS=[];SNAP=null;if(navigator.onLine)purgeLocal();$("#modal").classList.remove("on");document.body.classList.remove("dr")}if(unsub){unsub();unsub=null}
   if(u){if(SNAPRAW&&SNAPRAW.uid===u.uid){if(!TRIPS.length){TRIPS=SNAPRAW.trips;SNAP={uid:SNAPRAW.uid,name:SNAPRAW.name,ts:SNAPRAW.ts}}}else if(SNAPRAW){try{localStorage.removeItem("tp-snap")}catch(e){}SNAPRAW=null}}else{TRIPS=[];SNAP=null}
   $("#who").textContent=u?(u.displayName||"我").slice(0,1):"登入";
   if(u){let first=true;unsub=onSnapshot(query(collection(db,"trips"),where("members","array-contains",u.uid)),s=>{TRIPS=s.docs.map(d=>norm({id:d.id,...d.data()}));saveSnap(u);render();if(first){first=false;if(navigator.onLine)migrate();runPending()}},er=>{console.error("[snapshot]",er)})}
