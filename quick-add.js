@@ -112,6 +112,17 @@ function field(label, input) {
   document.getElementById("qa-form").appendChild(wrap);
   return input;
 }
+function qaHint(el,msg){
+  const wrap=el.parentNode;
+  let old=wrap.querySelector(".qa-hint");
+  if(old)old.remove();
+  if(msg){
+    const h=document.createElement("span");
+    h.className="qa-hint";
+    h.textContent=msg;
+    wrap.appendChild(h);
+  }
+}
 function buildForm() {
   const form = document.getElementById("qa-form");
   form.innerHTML = "";
@@ -131,15 +142,17 @@ function buildForm() {
     })());
     amount.focus();
     const currency = field("幣別", (() => {
+      const a = api();
+      const t = a.T0 ? a.T0() : null;
+      const cur = t ? (t.currency || "JPY") : defaultCurrency();
       const sel = document.createElement("select");
       sel.className = "qa-select";
-      for (const c of ["JPY", "TWD", "USD", "EUR"]) {
-        const o = document.createElement("option");
-        o.value = c;
-        o.textContent = c;
-        if (c === defaultCurrency()) o.selected = true;
-        sel.appendChild(o);
-      }
+      const o = document.createElement("option");
+      o.value = cur;
+      o.textContent = cur;
+      o.selected = true;
+      o.disabled = true;
+      sel.appendChild(o);
       return sel;
     })());
     const memo = field("備註（選填）", (() => {
@@ -178,9 +191,7 @@ function readForm() {
     stop: stopValue || "",
   };
   if (currentType === "expense") {
-    if (!d.amount.value.trim()) return null;
     const amount = parseFloat(String(d.amount.value).replace(/,/g, ""));
-    if (!Number.isFinite(amount)) return null;
     return { ...base, amount, currency: d.currency.value, memo: d.memo.value.trim() };
   }
   if (!d.content.value.trim()) return null;
@@ -506,12 +517,36 @@ function bindEvents() {
   on(saveBtn, "click", () => {
     const data = readForm();
     if (!data) return;
+    const a = api();
+    const form = document.getElementById("qa-form");
+    const amtEl = form._qa && form._qa.amount;
+    if (currentType === "expense") {
+      const raw = String(amtEl ? amtEl.value : "").replace(/,/g, "").trim();
+      const amount = parseFloat(raw);
+      if (!raw || !Number.isFinite(amount) || amount <= 0) {
+        qaHint(amtEl, "金額必須大於 0");
+        if (amtEl) amtEl.focus();
+        return;
+      }
+      qaHint(amtEl, "");
+      const t = a.T0 ? a.T0() : null;
+      if (!t) { a.toast("請先建立行程"); return; }
+      if (!a.canEdit || !a.canEdit(t)) { a.toast("無法編輯此行程"); return; }
+      if (!a.addExpense) { a.toast("儲存功能不可用"); return; }
+      if (!a.addExpense(t, { item: data.memo || "花費", amount, date: data.date })) return;
+      close();
+      form.querySelectorAll("input, textarea, select").forEach((el) => {
+        el.value = "";
+        if (el.tagName === "SELECT") el.selectedIndex = 0;
+      });
+      stopValue = "";
+      a.toast("已記帳");
+      return;
+    }
     drafts.push({ id: rnd(8), ts: Date.now(), ...data });
-    const t = api();
-    if (t.toast) t.toast("已儲存（示範）");
+    if (a.toast) a.toast("已儲存（示範）");
     else console.warn("[quick-add] toast 不可用");
     close();
-    const form = document.getElementById("qa-form");
     form.querySelectorAll("input, textarea, select").forEach((el) => {
       el.value = "";
       if (el.tagName === "SELECT") el.selectedIndex = 0;
