@@ -29,6 +29,7 @@ function writeLastType(v) {
     localStorage.setItem(LAST_KEY, v);
   } catch (e) {}
 }
+const rnd=(n=8)=>Math.random().toString(36).slice(2,2+n);
 function defaultCurrency() {
   try {
     const t = T0 ? T0() : null;
@@ -399,9 +400,10 @@ function installStyle() {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      min-height: 44px;
+      height: 48px;
+      min-width: 96px;
       padding: 0 24px;
-      border: 1px solid rgba(58, 46, 38, 0.18);
+      border: 1px solid #EADFCF;
       border-radius: 999px;
       background: #fff;
       color: #3A2E26;
@@ -413,15 +415,6 @@ function installStyle() {
     }
     .qa-save:active {
       opacity: 0.85;
-    }
-    .qa-save svg {
-      width: 20px;
-      height: 20px;
-      fill: none;
-      stroke: #FF7A00;
-      stroke-width: 1.75;
-      stroke-linecap: round;
-      stroke-linejoin: round;
     }
     @media (prefers-reduced-motion: reduce) {
       .qa-scrim,
@@ -454,10 +447,7 @@ function createEl() {
       <div class="qa-stop" id="qa-stop"></div>
       <div class="qa-form" id="qa-form"></div>
       <div class="qa-foot">
-        <button class="qa-save" id="qa-save" type="button">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10l3 3 3-3h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"/><polyline points="7 13 11 17 17 11"/></svg>
-          <span>儲存</span>
-        </button>
+        <button class="qa-save" id="qa-save" type="button">儲存</button>
       </div>
     </div>
   `;
@@ -501,6 +491,7 @@ function bindEvents() {
     if (!data) return;
     drafts.push({ id: rnd(8), ts: Date.now(), ...data });
     toast("已儲存（示範）");
+    close();
   });
 }
 
