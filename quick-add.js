@@ -472,28 +472,21 @@ function bindEvents() {
   const scrim = document.getElementById("qa-scrim");
   const closeBtn = document.getElementById("qa-close");
   const saveBtn = document.getElementById("qa-save");
-  const tabs = document.getElementById("qa-tabs");
+  const tabs = document.querySelector(".qa-tabs");
   const close = () => {
     document.body.classList.remove("qa-open");
   };
-  closeBtn.addEventListener("click", close);
-  scrim.addEventListener("click", close);
+  const on = (el, ev, fn, opt) => { if (el) el.addEventListener(ev, fn, opt); };
+  on(closeBtn, "click", close);
+  on(scrim, "click", close);
   let startY = 0;
-  sheet.addEventListener(
-    "touchstart",
-    (e) => {
-      startY = e.touches[0].clientY;
-    },
-    { passive: true }
-  );
-  sheet.addEventListener(
-    "touchmove",
-    (e) => {
-      if (e.touches[0].clientY - startY > 80) close();
-    },
-    { passive: true }
-  );
-  tabs.addEventListener("click", (e) => {
+  on(sheet, "touchstart", (e) => {
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  on(sheet, "touchmove", (e) => {
+    if (e.touches[0].clientY - startY > 80) close();
+  }, { passive: true });
+  on(tabs, "click", (e) => {
     const b = e.target.closest(".qa-tab");
     if (!b) return;
     const t = b.dataset.qt;
@@ -503,7 +496,7 @@ function bindEvents() {
     writeLastType(t);
     buildForm();
   });
-  saveBtn.addEventListener("click", () => {
+  on(saveBtn, "click", () => {
     const data = readForm();
     if (!data) return;
     drafts.push({ id: rnd(8), ts: Date.now(), ...data });
