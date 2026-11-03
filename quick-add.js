@@ -2,12 +2,7 @@
  * 匯出 openQuickAdd() 並掛 window.openQuickAdd；宿主函式從 window.QA_API 取得（app.js 無匯出）。
  * 僅 UI 與記憶體暫存，寫入資料庫留下一步。
  */
-const QA_API = window.QA_API || {};
-const getLocalDateStr = QA_API.getLocalDateStr;
-const getTodayItems = QA_API.getTodayItems;
-const T0 = QA_API.T0;
-const toast = QA_API.toast;
-const esc = QA_API.esc;
+const api = () => window.QA_API || {};
 const LAST_KEY = "tt-qa-last";
 const TYPES = ["expense", "note", "place"];
 let qaEl = null;
@@ -32,17 +27,19 @@ function writeLastType(v) {
 const rnd=(n=8)=>Math.random().toString(36).slice(2,2+n);
 function defaultCurrency() {
   try {
-    const t = T0 ? T0() : null;
+    const a = api();
+    const t = a.T0 ? a.T0() : null;
     return t && t.currency ? t.currency : "JPY";
   } catch (e) {
     return "JPY";
   }
 }
 function todayItems() {
-  if (!getTodayItems || !T0 || !getLocalDateStr) return [];
-  const t = T0();
+  const a = api();
+  if (!a.getTodayItems || !a.T0 || !a.getLocalDateStr) return [];
+  const t = a.T0();
   if (!t) return [];
-  return getTodayItems(t, getLocalDateStr()) || [];
+  return a.getTodayItems(t, a.getLocalDateStr()) || [];
 }
 function parseTime(s) {
   const m = String(s == null ? "" : s).match(/(\d{1,2}):(\d{2})/);
@@ -65,22 +62,24 @@ function nearestStop(items) {
   return best || items[0] || null;
 }
 function renderStop() {
+  const e = api().esc;
   const wrap = document.getElementById("qa-stop");
   wrap.innerHTML = "";
   const items = todayItems();
   if (!items.length) return;
   const pick = nearestStop(items);
-  stopValue = esc(pick && pick.h ? pick.h : "");
+  stopValue = e(pick && pick.h ? pick.h : "");
   const btn = document.createElement("button");
   btn.type = "button";
   btn.innerHTML = `在哪一站：${stopValue} <span class="qa-caret">▾</span>`;
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
+  btn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
     toggleStopList(items, btn);
   });
   wrap.appendChild(btn);
 }
 function toggleStopList(items, btn) {
+  const e = api().esc;
   const old = document.getElementById("qa-stop-list");
   if (old) old.remove();
   const list = document.createElement("div");
@@ -89,10 +88,10 @@ function toggleStopList(items, btn) {
   for (const it of items) {
     const b = document.createElement("button");
     b.type = "button";
-    b.textContent = esc(it && it.h ? it.h : "") + (it.t ? ` （${esc(it.t)}）` : "");
-    b.addEventListener("click", (e) => {
-      e.stopPropagation();
-      stopValue = esc(it && it.h ? it.h : "");
+    b.textContent = e(it && it.h ? it.h : "") + (it.t ? ` （${e(it.t)}）` : "");
+    b.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      stopValue = e(it && it.h ? it.h : "");
       btn.innerHTML = `在哪一站：${stopValue} <span class="qa-caret">▾</span>`;
       list.remove();
     });
@@ -116,8 +115,9 @@ function field(label, input) {
 function buildForm() {
   const form = document.getElementById("qa-form");
   form.innerHTML = "";
-  document.getElementById("qa-date").textContent = getLocalDateStr
-    ? getLocalDateStr()
+  const a = api();
+  document.getElementById("qa-date").textContent = a.getLocalDateStr
+    ? a.getLocalDateStr()
     : "";
   renderStop();
   if (currentType === "expense") {
@@ -171,9 +171,10 @@ function buildForm() {
 function readForm() {
   const d = document.getElementById("qa-form")._qa;
   if (!d) return null;
+  const a = api();
   const base = {
     type: currentType,
-    date: getLocalDateStr ? getLocalDateStr() : "",
+    date: a.getLocalDateStr ? a.getLocalDateStr() : "",
     stop: stopValue || "",
   };
   if (currentType === "expense") {
@@ -401,8 +402,7 @@ function installStyle() {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      height: 44px;
+      height: 48px;
       min-width: 96px;
       padding: 0 24px;
       border: 1px solid #EADFCF;
@@ -507,7 +507,9 @@ function bindEvents() {
     const data = readForm();
     if (!data) return;
     drafts.push({ id: rnd(8), ts: Date.now(), ...data });
-    toast("已儲存（示範）");
+    const t = api();
+    if (t.toast) t.toast("已儲存（示範）");
+    else console.warn("[quick-add] toast 不可用");
     close();
     const form = document.getElementById("qa-form");
     form.querySelectorAll("input, textarea, select").forEach((el) => {
