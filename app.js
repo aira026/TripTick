@@ -1333,3 +1333,4 @@ window.runTripLogicTests = runTripLogicTests;
 window.getLocalDateStr = getLocalDateStr;
 window.getDayDateStr = getDayDateStr;
 window.parseYMD = parseYMD;
+window.QA_API = { getLocalDateStr, getTodayItems, T0, toast, esc };
