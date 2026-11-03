@@ -132,6 +132,7 @@ function buildForm() {
     amount.focus();
     const currency = field("幣別", (() => {
       const sel = document.createElement("select");
+      sel.className = "qa-select";
       for (const c of ["JPY", "TWD", "USD", "EUR"]) {
         const o = document.createElement("option");
         o.value = c;
@@ -399,8 +400,9 @@ function installStyle() {
     .qa-save {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
-      height: 48px;
+      height: 44px;
       min-width: 96px;
       padding: 0 24px;
       border: 1px solid #EADFCF;
@@ -408,13 +410,28 @@ function installStyle() {
       background: #fff;
       color: #3A2E26;
       font: inherit;
-      font-size: 15px;
-      font-weight: 700;
+      font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
     }
     .qa-save:active {
       opacity: 0.85;
+    }
+    .qa-select {
+      appearance: none;
+      height: 48px;
+      padding: 0 36px 0 16px;
+      border-radius: 16px;
+      border: 1px solid #EADFCF;
+      background: #fff;
+      color: #3A2E26;
+      font-size: 16px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%233A2E26' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+      cursor: pointer;
     }
     @media (prefers-reduced-motion: reduce) {
       .qa-scrim,
@@ -492,6 +509,12 @@ function bindEvents() {
     drafts.push({ id: rnd(8), ts: Date.now(), ...data });
     toast("已儲存（示範）");
     close();
+    const form = document.getElementById("qa-form");
+    form.querySelectorAll("input, textarea, select").forEach((el) => {
+      el.value = "";
+      if (el.tagName === "SELECT") el.selectedIndex = 0;
+    });
+    stopValue = "";
   });
 }
 
