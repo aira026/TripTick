@@ -809,7 +809,7 @@ function updateBnav(){
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-bn]");if(!b)return;
   const k=b.dataset.bn;
-  if(k==="add"){toast("記帳：步驟 3 再做");return}
+  if(k==="add"){window.openQuickAdd?.();return}
   go(k);
 });
 // 導覽下滑收起：向下捲超過 40px 給 body 加 bnav-hide 讓導覽 translateY 滑出畫面；
@@ -817,7 +817,7 @@ document.addEventListener("click",e=>{
 // 彈層（modal / 抽屜 dr）開啟時不受此邏輯影響。
 (function(){
   let lastY=0;
-  function popupOpen(){return $("#modal").classList.contains("on")||document.body.classList.contains("dr");}
+  function popupOpen(){return $("#modal").classList.contains("on")||document.body.classList.contains("dr")||document.body.classList.contains("qa-open");}
   addEventListener("scroll",()=>{
     if(popupOpen())return;
     const y=scrollY;
