@@ -1333,4 +1333,13 @@ window.runTripLogicTests = runTripLogicTests;
 window.getLocalDateStr = getLocalDateStr;
 window.getDayDateStr = getDayDateStr;
 window.parseYMD = parseYMD;
-window.QA_API = { toast, esc, getLocalDateStr, getTodayItems, T0 };
+function addExpense(t,{item,amount,date}){
+  if(!t)return false;
+  if(!me){toast("離線檢視模式無法編輯，請連線並登入後再試");return false}
+  const id=(typeof crypto!=="undefined"&&typeof crypto.randomUUID==="function")?crypto.randomUUID():rnd(8);
+  const rec={id,item,amount,paidBy:me.uid,splitWith:cfg(t).members,date};
+  saveEx(t,[...(t.expenses||[]),rec]);
+  render();
+  return true
+}
+window.QA_API = { toast, esc, getLocalDateStr, getTodayItems, T0, addExpense, canEdit:(t)=>!!me&&!!t&&(t.members||[]).includes(me.uid) };
