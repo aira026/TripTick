@@ -760,7 +760,7 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="goyen"){go("yen");return}
  if(a==="accday"){const sec=document.getElementById("dacc-"+v);if(sec){const o=sec.classList.toggle("open");b.setAttribute("aria-expanded",o)}return}
  if(a==="print"){document.body.classList.remove("dr");go("now");{const t0=T0();if(t0&&$("#dayblk"))$("#dayblk").innerHTML=getDays(t0).map((_,n)=>dayHTML(t0,n)).join("")}setTimeout(()=>{try{MiniMap.refresh()}catch(e){}setTimeout(()=>window.print(),350)},150);return}
- if(a==="cprev"||a==="cnext"||a==="creset"){if(t)renderCurrent(t,CUR_EL);return}
+ if(a==="cprev"||a==="cnext"||a==="creset"){curStep(a);return}
  if(a==="lvnext"||a==="lvprev"||a==="lvauto"){liveStep(a);return}
  if(a==="sosadd"){$("#sosrows").insertAdjacentHTML("beforeend",sosRow(["","",""]));return}
  if(a==="sosdel"){b.closest(".sosr").remove();return}
