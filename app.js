@@ -188,7 +188,7 @@ function scrollToCard(cont,i,instant){
   else cont.scrollLeft=left;
 }
 function curStep(a){
-  const cont=document.querySelector("#t-current .trip-carousel");if(!cont)return;
+  const cont=document.querySelector(".panel.on .trip-carousel");if(!cont)return;
   const n=cont.children.length;if(!n)return;
   if(a==="creset"){const t=T0();const target=t?realIdx(t):0;scrollToCard(cont,Math.max(0,Math.min(target,n-1)),false);return;}
   const mid=cont.scrollLeft+cont.clientWidth/2;let best=0,bd=1e9;
