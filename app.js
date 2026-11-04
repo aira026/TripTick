@@ -71,9 +71,9 @@ const lbl=(t,k)=>(t.members||[]).includes(k)?nameOf(t,k):(t.memberNames&&t.membe
 const memoOf=t=>t.memo?JSON.parse(JSON.stringify(t.memo)):{risks:((t.storm&&t.storm.risks)||[]).map(r=>({d:r[0],w:r[1],p:r[2],c:r[3]?1:0})),steps:((t.storm&&t.storm.crisis)||GST.crisis).map(c=>({t:c[0],d:c[1]})),note:""};
 const saveMemo=(t,m)=>patch(t,{memo:m});
 const eb=(k,i)=>`<span class="ed mb"><button class="x" data-a="memoedit" data-v="${k}:${i}" aria-label="編輯"><i class=i-edit></i></button><button class="x" data-a="memodel" data-v="${k}:${i}" aria-label="刪除"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>`;
-const stormHTML=t=>{const M=memoOf(t);return`<h2 class="sec">備案提醒</h2>${M.risks.map((r,i)=>`<div class="rw ${r.c?"crit":""}"><b>${esc(r.d)}</b><span>${esc(r.w)}</span><em>${esc(r.p)}</em>${eb("risks",i)}</div>`).join("")||'<p class="meta" style="margin:4px">還沒有備案。</p>'}<div class="pills ed"><button class="pill" data-a="memoadd" data-v="risks">＋ 新增備案</button></div>
-<h2 class="sec">緊急處理步驟</h2><ol class="cr">${M.steps.map((s,i)=>`<li><div><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>${eb("steps",i)}</li>`).join("")}</ol><div class="pills ed"><button class="pill" data-a="memoadd" data-v="steps">＋ 新增步驟</button></div><div class="pills"><a class="pill" href="tel:119">撥打 119</a></div>
-<h2 class="sec">個人備忘</h2><p class="meta" style="margin:0 4px 6px">同一趟行程的成員在技術上讀得到，請勿記密碼等敏感資料。</p><div class="glass blk"><div class="vw memo">${M.note?esc(M.note):'<span class="meta">（空白，按「編輯模式」可以寫）</span>'}</div><textarea class="fi ed" id="memo-note" rows="6" placeholder="想記的事…（備案、集合地點、提醒…）">${esc(M.note)}</textarea></div>`};
+const stormHTML=t=>{const M=memoOf(t);const entries=(t.memo&&t.memo.entries)||[];const Mr={risks:M.risks!==undefined?M.risks:((t.storm&&t.storm.risks)||[]).map(r=>({d:r[0],w:r[1],p:r[2],c:r[3]?1:0})),steps:M.steps!==undefined?M.steps:((t.storm&&t.storm.crisis)||GST.crisis).map(c=>({t:c[0],d:c[1]})),note:M.note!==undefined?M.note:"",entries};return`<h2 class="sec">備案提醒</h2>${Mr.risks.map((r,i)=>`<div class="rw ${r.c?"crit":""}"><b>${esc(r.d)}</b><span>${esc(r.w)}</span><em>${esc(r.p)}</em>${eb("risks",i)}</div>`).join("")||'<p class="meta" style="margin:4px">還沒有備案。</p>'}<div class="pills ed"><button class="pill" data-a="memoadd" data-v="risks">＋ 新增備案</button></div>
+<h2 class="sec">緊急處理步驟</h2><ol class="cr">${Mr.steps.map((s,i)=>`<li><div><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>${eb("steps",i)}</li>`).join("")}</ol><div class="pills ed"><button class="pill" data-a="memoadd" data-v="steps">＋ 新增步驟</button></div><div class="pills"><a class="pill" href="tel:119">撥打 119</a></div>
+<h2 class="sec">個人備忘</h2><p class="meta" style="margin:0 4px 6px">同一趟行程的成員在技術上讀得到，請勿記密碼等敏感資料。</p><div class="glass blk"><div class="vw memo">${Mr.note?esc(Mr.note):'<span class="meta">（空白，按「編輯模式」可以寫）</span>'}</div><textarea class="fi ed" id="memo-note" rows="6" placeholder="想記的事…（備案、集合地點、提醒…）">${esc(Mr.note)}</textarea></div><h2 class="sec">備忘錄</h2><div class="glass blk">${entries.length?entries.slice().reverse().map(e=>`<div class="me-list"><div class="me-date">${esc(e.date||"")}</div><div class="me-text">${esc(e.text)}</div></div>`).join(""):'<p class="meta" style="margin:4px">尚無備忘。</p>'}</div>`};
 function memoForm(k,i){const t=T0(),M=memoOf(t),x=i!=null?M[k][i]:{};
  modal(k==="risks"?`<h3>${i!=null?"編輯":"新增"}備案</h3><div class="fm" data-k="risks" data-i="${i??""}"><label>天數／標題<input id="mm-a" value="${esc(x.d)}" placeholder="例如 D3"></label><label>可能的狀況<input id="mm-b" value="${esc(x.w)}"></label><label>備案對策<input id="mm-c" value="${esc(x.p)}"></label><label class="chk"><input type="checkbox" id="mm-x" ${x.c?"checked":""}> 標為重要（紅色）</label><div class="pills"><button class="pill" data-a="memosave">儲存</button></div></div>`
  :`<h3>${i!=null?"編輯":"新增"}步驟</h3><div class="fm" data-k="steps" data-i="${i??""}"><label>步驟標題<input id="mm-a" value="${esc(x.t)}"></label><label>說明<input id="mm-b" value="${esc(x.d)}"></label><div class="pills"><button class="pill" data-a="memosave">儲存</button></div></div>`)}
@@ -1342,4 +1342,15 @@ function addExpense(t,{item,amount,date}){
   render();
   return true
 }
-window.QA_API = { toast, esc, getLocalDateStr, getTodayItems, T0, addExpense, canEdit:(t)=>!!me&&!!t&&(t.members||[]).includes(me.uid) };
+function addMemoEntry(t,{text,date}){
+  if(!t){toast("請先建立行程");return false}
+  if(!me){toast("離線檢視模式無法編輯，請連線並登入後再試");return false}
+  if(!(t.members||[]).includes(me.uid)){toast("無法編輯此行程");return false}
+  const id=(typeof crypto!=="undefined"&&typeof crypto.randomUUID==="function")?crypto.randomUUID():rnd(8);
+  const entry={id,text:String(text||"").trim(),ts:Date.now(),date};
+  const memo=t.memo?{...t.memo,entries:[...((t.memo.entries)||[]),entry]}:{entries:[entry]};
+  patch(t,{memo:memo});
+  render();
+  return true
+}
+window.QA_API = { toast, esc, getLocalDateStr, getTodayItems, T0, addExpense, addMemoEntry, canEdit:(t)=>!!me&&!!t&&(t.members||[]).includes(me.uid) };
