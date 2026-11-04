@@ -543,6 +543,27 @@ function bindEvents() {
       a.toast("已記帳");
       return;
     }
+    if (currentType === "note") {
+      const t = a.T0 ? a.T0() : null;
+      if (!t) { a.toast("請先建立行程"); return; }
+      if (!a.canEdit || !a.canEdit(t)) { a.toast("無法編輯此行程"); return; }
+      if (!a.addMemoEntry) { a.toast("儲存功能不可用"); return; }
+      if (!data.content || !data.content.trim()) {
+        const contentEl = form._qa && form._qa.content;
+        qaHint(contentEl, "內容不可空白");
+        if (contentEl) contentEl.focus();
+        return;
+      }
+      if (!a.addMemoEntry(t, { text: data.content.trim(), date: data.date })) return;
+      close();
+      form.querySelectorAll("input, textarea, select").forEach((el) => {
+        el.value = "";
+        if (el.tagName === "SELECT") el.selectedIndex = 0;
+      });
+      stopValue = "";
+      a.toast("已記下");
+      return;
+    }
     drafts.push({ id: rnd(8), ts: Date.now(), ...data });
     if (a.toast) a.toast("已儲存（示範）");
     else console.warn("[quick-add] toast 不可用");
