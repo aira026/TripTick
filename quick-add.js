@@ -9,6 +9,7 @@ let qaEl = null;
 let eventsBound = false;
 let currentType = "expense";
 let stopValue = "";
+let editMode = null;
 const drafts = [];
 
 function readLastType() {
@@ -168,6 +169,7 @@ function buildForm() {
       t.placeholder = "寫下備忘…";
       return t;
     })());
+    if (editMode) content.value = editMode.text;
     content.focus();
     form._qa = { content };
   } else {
@@ -200,10 +202,16 @@ function readForm() {
   return { ...base, content: d.content.value.trim() };
 }
 
-export function openQuickAdd() {
+export function openQuickAdd(opts) {
   installStyle();
   createEl();
-  currentType = readLastType();
+  if (opts && opts.mode === "edit-note") {
+    editMode = { id: opts.id, text: opts.text || "" };
+    currentType = "note";
+  } else {
+    editMode = null;
+    currentType = readLastType();
+  }
   document.querySelectorAll(".qa-tab").forEach((b) =>
     b.classList.toggle("on", b.dataset.qt === currentType)
   );
@@ -493,8 +501,10 @@ function bindEvents() {
   const closeBtn = document.getElementById("qa-close");
   const saveBtn = document.getElementById("qa-save");
   const tabs = document.querySelector(".qa-tabs");
+  if (editMode) tabs.style.display = "none";
   const close = () => {
     document.body.classList.remove("qa-open");
+    editMode = null;
   };
   const on = (el, ev, fn, opt) => { if (el) el.addEventListener(ev, fn, opt); };
   on(closeBtn, "click", close);
@@ -558,6 +568,18 @@ function bindEvents() {
       }
       const contentEl = form._qa && form._qa.content;
       qaHint(contentEl, "");
+      if (editMode) {
+        if (!a.editMemoEntry(t, editMode.id, data.content.trim())) return;
+        close();
+        form.querySelectorAll("input, textarea, select").forEach((el) => {
+          el.value = "";
+          if (el.tagName === "SELECT") el.selectedIndex = 0;
+        });
+        stopValue = "";
+        editMode = null;
+        a.toast("已更新");
+        return;
+      }
       if (!a.addMemoEntry(t, { text: data.content.trim(), date: data.date })) return;
       close();
       form.querySelectorAll("input, textarea, select").forEach((el) => {
