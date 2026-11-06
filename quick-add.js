@@ -194,7 +194,9 @@ function readForm() {
     const amount = parseFloat(String(d.amount.value).replace(/,/g, ""));
     return { ...base, amount, currency: d.currency.value, memo: d.memo.value.trim() };
   }
-  if (!d.content.value.trim()) return null;
+  if (currentType === "place") {
+    if (!d.content.value.trim()) return null;
+  }
   return { ...base, content: d.content.value.trim() };
 }
 
@@ -554,6 +556,8 @@ function bindEvents() {
         if (contentEl) contentEl.focus();
         return;
       }
+      const contentEl = form._qa && form._qa.content;
+      qaHint(contentEl, "");
       if (!a.addMemoEntry(t, { text: data.content.trim(), date: data.date })) return;
       close();
       form.querySelectorAll("input, textarea, select").forEach((el) => {
