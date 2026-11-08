@@ -208,6 +208,9 @@ export function openQuickAdd(opts) {
   if (opts && opts.mode === "edit-note") {
     editMode = { id: opts.id, text: opts.text || "" };
     currentType = "note";
+  } else if (opts && opts.type === "note") {
+    editMode = null;
+    currentType = "note";
   } else {
     editMode = null;
     currentType = readLastType();
