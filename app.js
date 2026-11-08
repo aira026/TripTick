@@ -82,15 +82,39 @@ const saveMemo=(t,m)=>patch(t,{memo:m});
 const eb=(k,i)=>`<span class="ed mb"><button class="x" data-a="memoedit" data-v="${k}:${i}" aria-label="編輯"><i class=i-edit></i></button><button class="x" data-a="memodel" data-v="${k}:${i}" aria-label="刪除"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>`;
 const meb=id=>`<span class="ed mb"><button class="x" data-a="meedit" data-v="${esc(id)}" aria-label="編輯"><i class=i-edit></i></button><button class="x" data-a="medel" data-v="${esc(id)}" aria-label="刪除"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>`;
 let stormTab="memo";
-const stormMemoHTML=t=>{const M=memoOf(t);const entries=(t.memo&&t.memo.entries)||[];const Mr={risks:M.risks!==undefined?M.risks:((t.storm&&t.storm.risks)||[]).map(r=>({d:r[0],w:r[1],p:r[2],c:r[3]?1:0})),steps:M.steps!==undefined?M.steps:((t.storm&&t.storm.crisis)||GST.crisis).map(c=>({t:c[0],d:c[1]})),note:M.note!==undefined?M.note:"",entries};return`<h2 class="sec">備案提醒</h2>${Mr.risks.map((r,i)=>`<div class="rw ${r.c?"crit":""}"><b>${esc(r.d)}</b><span>${esc(r.w)}</span><em>${esc(r.p)}</em>${eb("risks",i)}</div>`).join("")||'<p class="meta" style="margin:4px">還沒有備案。</p>'}<div class="pills ed"><button class="pill" data-a="memoadd" data-v="risks">＋ 新增備案</button></div>
-<h2 class="sec">緊急處理步驟</h2><ol class="cr">${Mr.steps.map((s,i)=>`<li><div><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>${eb("steps",i)}</li>`).join("")}</ol><div class="pills ed"><button class="pill" data-a="memoadd" data-v="steps">＋ 新增步驟</button></div><div class="pills"><a class="pill" href="tel:119">撥打 119</a></div>
-<h2 class="sec">個人備忘</h2><p class="meta" style="margin:0 4px 6px">同一趟行程的成員在技術上讀得到，請勿記密碼等敏感資料。</p><div class="glass blk"><div class="vw memo">${Mr.note?esc(Mr.note):'<span class="meta">（空白，按「編輯模式」可以寫）</span>'}</div><textarea class="fi ed" id="memo-note" rows="6" placeholder="想記的事…（備案、集合地點、提醒…）">${esc(Mr.note)}</textarea></div><h2 class="sec">備忘錄</h2><div class="glass blk">${entries.length?entries.slice().reverse().map(e=>`<div class="me-entry"><div class="me-body"><div class="me-date">${esc(e.date||"")}</div><div class="me-text" style="min-width:0">${esc(e.text)}</div></div>${e.id?meb(e.id):""}</div>`).join(""):'<p class="meta" style="margin:4px">尚無備忘。</p>'}</div>`};
-const stormUrgentHTML=t=>`<p>（緊急頁，內容待搬移）</p>`;
+function groupEntriesByDate(entries){
+  const list=(entries||[]).slice().reverse();
+  const map=new Map();
+  list.forEach(e=>{const k=e.date||"";if(!map.has(k))map.set(k,[]);map.get(k).push(e)});
+  const keys=[...map.keys()].filter(k=>k).sort().reverse();
+  const out=keys.map(k=>({label:k,items:map.get(k)}));
+  if(map.has(""))out.push({label:"未標日期",items:map.get("")});
+  return out;
+}
+const stormMemoHTML=t=>{
+  const M=memoOf(t);
+  const entries=(t.memo&&t.memo.entries)||[];
+  const note=M.note!==undefined?M.note:"";
+  const groups=groupEntriesByDate(entries);
+  const can=!!(window.QA_API&&window.QA_API.canEdit&&window.QA_API.canEdit(t));
+  const entriesHTML=groups.length
+    ?groups.map(g=>`<div class="me-day">${esc(g.label)}</div>`+g.items.map(e=>`<div class="me-entry"><div class="me-body"><div class="me-text" style="min-width:0">${esc(e.text)}</div></div>${e.id?meb(e.id):""}</div>`).join("")).join("")
+    :`<p class="meta" style="margin:4px">還沒有備忘。</p>${can?`<div class="pills"><button class="pill" data-a="memonew">記一筆</button></div>`:""}`;
+  const noteInner=`<h2 class="sec">個人備忘</h2><div class="glass blk"><div class="vw memo">${note?esc(note):'<span class="meta">（空白，按「編輯模式」可以寫）</span>'}</div><textarea class="fi ed" id="memo-note" rows="6" placeholder="想記的事…（備案、集合地點、提醒…）">${esc(note)}</textarea></div>`;
+  return `<h2 class="sec">備忘錄</h2><div class="glass blk">${entriesHTML}</div>${note?noteInner:`<div class="ed">${noteInner}</div>`}<p class="foot-note">備忘內容同行程成員都看得到，請勿記密碼等敏感資料。</p>`;
+};
+const stormUrgentHTML=t=>{
+  const M=memoOf(t);
+  const risks=M.risks||[];
+  const steps=M.steps||[];
+  const risksHTML=risks.map((r,i)=>`<div class="rw ${r.c?"crit":""}"><b>${esc(r.d)}</b><span>${esc(r.w)}</span><em>${esc(r.p)}</em>${eb("risks",i)}</div>`).join("")||'<p class="meta" style="margin:4px">還沒有備案。</p>';
+  const stepsInner=`<h2 class="sec">緊急處理步驟</h2><ol class="cr">${steps.map((s,i)=>`<li><div><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>${eb("steps",i)}</li>`).join("")}</ol><div class="pills ed"><button class="pill" data-a="memoadd" data-v="steps">＋ 新增步驟</button></div>`;
+  return `<div class="pills"><a class="pill" href="tel:119">撥打 119</a></div><h2 class="sec">備案提醒</h2>${risksHTML}<div class="pills ed"><button class="pill" data-a="memoadd" data-v="risks">＋ 新增備案</button></div>${steps.length?stepsInner:`<div class="ed">${stepsInner}</div>`}`;
+};
 const stormHTML=t=>{
   const seg=`<div class="seg"><button data-a="stormtab" data-v="memo" class="${stormTab==="memo"?"on":""}" aria-pressed="${stormTab==="memo"}">備忘</button><button data-a="stormtab" data-v="urgent" class="${stormTab==="urgent"?"on":""}" aria-pressed="${stormTab==="urgent"}">緊急</button></div>`;
   return seg+(stormTab==="urgent"?stormUrgentHTML(t):stormMemoHTML(t));
 };
-
 function memoForm(k,i){const t=T0(),M=memoOf(t),x=i!=null?M[k][i]:{};
  modal(k==="risks"?`<h3>${i!=null?"編輯":"新增"}備案</h3><div class="fm" data-k="risks" data-i="${i??""}"><label>天數／標題<input id="mm-a" value="${esc(x.d)}" placeholder="例如 D3"></label><label>可能的狀況<input id="mm-b" value="${esc(x.w)}"></label><label>備案對策<input id="mm-c" value="${esc(x.p)}"></label><label class="chk"><input type="checkbox" id="mm-x" ${x.c?"checked":""}> 標為重要（紅色）</label><div class="pills"><button class="pill" data-a="memosave">儲存</button></div></div>`
  :`<h3>${i!=null?"編輯":"新增"}步驟</h3><div class="fm" data-k="steps" data-i="${i??""}"><label>步驟標題<input id="mm-a" value="${esc(x.t)}"></label><label>說明<input id="mm-b" value="${esc(x.d)}"></label><div class="pills"><button class="pill" data-a="memosave">儲存</button></div></div>`)}
@@ -756,6 +780,7 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="memoadd"&&t){memoForm(v,null);return}
  if(a==="memoedit"&&t){const[k,i]=v.split(":");memoForm(k,+i);return}
  if(a==="memodel"&&t){const[k,i]=v.split(":"),M=memoOf(t);M[k].splice(+i,1);saveMemo(t,M);$("#t-storm").innerHTML=bar()+stormHTML(t);return}
+ if(a==="memonew"){window.openQuickAdd?.({type:"note"});return}
  if(a==="stormtab"){const el=document.getElementById("memo-note");if(el&&el.value!==memoOf(T0()).note)el.dispatchEvent(new Event("change",{bubbles:true}));stormTab=v;$("#t-storm").innerHTML=bar()+stormHTML(T0());return}
 
 if(a==="meedit"&&t){const entries=t.memo&&t.memo.entries;const e=entries?entries.find(x=>x.id===v):null;if(!e){toast("找不到這筆備忘");return}openQuickAdd({mode:"edit-note",id:v,text:e.text});return}
