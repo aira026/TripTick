@@ -93,15 +93,15 @@ function groupEntriesByDate(entries){
 }
 const stormMemoHTML=t=>{
   const M=memoOf(t);
-  const entries=(t.memo&&t.memo.entries)||[];
-  const note=M.note!==undefined?M.note:"";
+  const entries0=(t.memo&&t.memo.entries)||[];
+  const note=typeof M.note==="string"?M.note:"";
+  const entries=note.trim()?[{id:"legacy-note",text:note,date:"",legacy:true},...entries0]:entries0;
   const groups=groupEntriesByDate(entries);
   const can=!!(window.QA_API&&window.QA_API.canEdit&&window.QA_API.canEdit(t));
   const entriesHTML=groups.length
-    ?groups.map(g=>`<div class="me-day">${esc(g.label)}</div>`+g.items.map(e=>`<div class="me-entry"><div class="me-body"><div class="me-text" style="min-width:0">${esc(e.text)}</div></div>${e.id?meb(e.id):""}</div>`).join("")).join("")
+    ?groups.map(g=>`<div class="me-day">${esc(g.label)}</div>`+g.items.map(e=>`<div class="me-entry"><div class="me-body"><div class="me-text" style="min-width:0${e.legacy?";white-space:pre-wrap":""}">${esc(e.text)}</div>${e.legacy?'<span class="meta">舊備忘</span>':""}</div>${e.id?meb(e.id):""}</div>`).join("")).join("")
     :`<p class="meta" style="margin:4px">還沒有備忘。</p>${can?`<div class="pills"><button class="pill" data-a="memonew">記一筆</button></div>`:""}`;
-  const noteInner=`<h2 class="sec">個人備忘</h2><div class="glass blk"><div class="vw memo">${note?esc(note):'<span class="meta">（空白，按「編輯模式」可以寫）</span>'}</div><textarea class="fi ed" id="memo-note" rows="6" placeholder="想記的事…（備案、集合地點、提醒…）">${esc(note)}</textarea></div>`;
-  return `<h2 class="sec">備忘錄</h2><div class="glass blk">${entriesHTML}</div>${note?noteInner:`<div class="ed">${noteInner}</div>`}<p class="foot-note">備忘內容同行程成員都看得到，請勿記密碼等敏感資料。</p>`;
+  return `<h2 class="sec">備忘錄</h2><div class="glass blk">${entriesHTML}</div><p class="foot-note">備忘內容同行程成員都看得到，請勿記密碼等敏感資料。</p>`;
 };
 const stormUrgentHTML=t=>{
   const M=memoOf(t);
@@ -781,9 +781,9 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="memoedit"&&t){const[k,i]=v.split(":");memoForm(k,+i);return}
  if(a==="memodel"&&t){const[k,i]=v.split(":"),M=memoOf(t);M[k].splice(+i,1);saveMemo(t,M);$("#t-storm").innerHTML=bar()+stormHTML(t);return}
  if(a==="memonew"){window.openQuickAdd?.({type:"note"});return}
- if(a==="stormtab"){const el=document.getElementById("memo-note");if(el&&el.value!==memoOf(T0()).note)el.dispatchEvent(new Event("change",{bubbles:true}));stormTab=v;$("#t-storm").innerHTML=bar()+stormHTML(T0());return}
+ if(a==="stormtab"){stormTab=v;$("#t-storm").innerHTML=bar()+stormHTML(T0());return}
 
-if(a==="meedit"&&t){const entries=t.memo&&t.memo.entries;const e=entries?entries.find(x=>x.id===v):null;if(!e){toast("找不到這筆備忘");return}openQuickAdd({mode:"edit-note",id:v,text:e.text});return}
+if(a==="meedit"&&t){if(v==="legacy-note"){openQuickAdd({mode:"edit-note",id:v,text:memoOf(t).note||""});return}const entries=t.memo&&t.memo.entries;const e=entries?entries.find(x=>x.id===v):null;if(!e){toast("找不到這筆備忘");return}openQuickAdd({mode:"edit-note",id:v,text:e.text});return}
 if(a==="medel"&&t){QA_API.deleteMemoEntry(t,v);return}
  if(a==="memosave"&&t){const f=document.querySelector(".fm"),k=f.dataset.k,i=f.dataset.i===""?null:+f.dataset.i,M=memoOf(t),A=$("#mm-a").value.trim(),B=$("#mm-b").value.trim();if(!A&&!B)return toast("請填寫內容");
   const it=k==="risks"?{d:A,w:B,p:$("#mm-c").value.trim(),c:$("#mm-x").checked?1:0}:{t:A,d:B};if(i!=null)M[k][i]=it;else M[k].push(it);saveMemo(t,M);$("#modal").classList.remove("on");$("#t-storm").innerHTML=bar()+stormHTML(t);return}
@@ -927,7 +927,6 @@ async function migrate(){if(!me||!TPL||sessionStorage.getItem("tp-mig"))return;c
   try{for(const u of ut){const {id,status,days,...r}=u;await setDoc(doc(collection(db,"trips")),{...clean({...r,nDays:days||1,days:[],booking:[],expenses:[],currency:CUR[u.country]||"TWD",lightSplitUrl:"",owner:me.uid,members:[me.uid],memberNames:{[me.uid]:me.displayName||"我"},st:{[me.uid]:status||"past"}}),createdAt:serverTimestamp()})}
   localStorage.removeItem("tp-trips");toast("已上傳本機旅程")}catch(e){toast("上傳失敗："+(e.code||e.message))}}}
 
-document.addEventListener("change",e=>{if(e.target.id!=="memo-note")return;const t=T0();if(!t)return;const M=memoOf(t);M.note=e.target.value;saveMemo(t,M)});
 async function membersModal(t){const code=await ensureInvite(t),mine=me.uid===t.owner;
  modal(`<h3>成員（${t.members.length}）</h3>${t.members.map(u=>`<div class="row"><span>${esc(nameOf(t,u))}${u===t.owner?' <small class="meta">建立者</small>':""}${u===me.uid?' <small class="meta">你</small>':""}</span>${mine&&u!==t.owner?`<button class="cb" data-a="kick" data-v="${esc(u)}">踢出</button>`:""}</div>`).join("")}
  <h4 class="meta" style="margin:16px 0 4px">邀請朋友加入</h4><div class="jp codebox"><span>${esc(code||"—")}</span><button class="pill" data-a="cpinv" data-v="${esc(code||"")}">複製</button></div>
@@ -1407,6 +1406,14 @@ function editMemoEntry(t,id,text){
   if(!t){toast("請先建立行程");return false}
   if(!me){toast("離線檢視模式無法編輯，請連線並登入後再試");return false}
   if(!(t.members||[]).includes(me.uid)){toast("無法編輯此行程");return false}
+  if(id==="legacy-note"){
+    const nt=String(text||"").trim();
+    if(nt==="")return false;
+    if((t.memo&&t.memo.note)===nt)return true;
+    patch(t,{memo:{...(t.memo||{}),note:nt}});
+    render();
+    return true
+  }
   const idx=_memoEntryIndex(t,id);
   if(idx===-2){console.warn("[editMemoEntry] memo.entries 不存在",id);toast("找不到這筆備忘，可能已被刪除");return false}
   if(idx===-1){console.warn("[editMemoEntry] 找不到 id",id);toast("找不到這筆備忘，可能已被刪除");return false}
@@ -1424,6 +1431,14 @@ function deleteMemoEntry(t,id){
   if(!t){toast("請先建立行程");return false}
   if(!me){toast("離線檢視模式無法編輯，請連線並登入後再試");return false}
   if(!(t.members||[]).includes(me.uid)){toast("無法編輯此行程");return false}
+  if(id==="legacy-note"){
+    const oldNote=t.memo&&typeof t.memo.note==="string"?t.memo.note:"";
+    if(!oldNote.trim()){toast("找不到這筆備忘，可能已被刪除");return false}
+    patch(t,{memo:{...t.memo,note:""}});
+    setTimeout(()=>undoToast(()=>{const c=T0();if(!c)return;return patch(c,{memo:{...(c.memo||{}),note:oldNote}}).then(()=>render())}),0);
+    render();
+    return true
+  }
   const idx=_memoEntryIndex(t,id);
   if(idx===-2){console.warn("[deleteMemoEntry] memo.entries 不存在",id);toast("找不到這筆備忘，可能已被刪除");return false}
   if(idx===-1){console.warn("[deleteMemoEntry] 找不到 id",id);toast("找不到這筆備忘，可能已被刪除");return false}
