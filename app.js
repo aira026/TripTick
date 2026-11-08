@@ -109,7 +109,7 @@ const stormUrgentHTML=t=>{
   const steps=M.steps||[];
   const risksHTML=risks.map((r,i)=>`<div class="rw ${r.c?"crit":""}"><b>${esc(r.d)}</b><span>${esc(r.w)}</span><em>${esc(r.p)}</em>${eb("risks",i)}</div>`).join("")||'<p class="meta" style="margin:4px">還沒有備案。</p>';
   const stepsInner=`<h2 class="sec">緊急處理步驟</h2><ol class="cr">${steps.map((s,i)=>`<li><div><b>${esc(s.t)}</b><span>${esc(s.d)}</span></div>${eb("steps",i)}</li>`).join("")}</ol><div class="pills ed"><button class="pill" data-a="memoadd" data-v="steps">＋ 新增步驟</button></div>`;
-  return `<div class="pills"><a class="pill" href="tel:119">撥打 119</a></div><h2 class="sec">備案提醒</h2>${risksHTML}<div class="pills ed"><button class="pill" data-a="memoadd" data-v="risks">＋ 新增備案</button></div>${steps.length?stepsInner:`<div class="ed">${stepsInner}</div>`}`;
+  return `<div class="pills"><a class="pill urgent" href="tel:119">撥打 119</a></div><h2 class="sec">備案提醒</h2>${risksHTML}<div class="pills ed"><button class="pill" data-a="memoadd" data-v="risks">＋ 新增備案</button></div>${steps.length?stepsInner:`<div class="ed">${stepsInner}</div>`}`;
 };
 const stormHTML=t=>{
   const seg=`<div class="seg"><button data-a="stormtab" data-v="memo" class="${stormTab==="memo"?"on":""}" aria-pressed="${stormTab==="memo"}">備忘</button><button data-a="stormtab" data-v="urgent" class="${stormTab==="urgent"?"on":""}" aria-pressed="${stormTab==="urgent"}">緊急</button></div>`;

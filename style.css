@@ -824,3 +824,26 @@ body.bnav-hide .bnav{transform:translateY(130%)}
 .more-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:96px;border-radius:28px;border:1px solid rgba(255,255,255,.45);background:rgba(255,252,246,.72);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:var(--sh);color:var(--ink);font:inherit;font-weight:600;text-align:center;cursor:pointer}
 .more-card .ic{width:22px;height:22px;margin:0}
 .more-card:active{opacity:.85}
+
+/* ===== patch-css: 備忘錄頁、緊急頁、白底圓膠囊按鈕 ===== */
+
+/* 1d 分段切換、備忘頁 */
+.seg button.on{background:#fff;color:#3A2E26;font-weight:700;box-shadow:var(--sh)}
+.me-day{font-size:13px;color:#7A6A5C;margin:24px 0 8px}
+.me-day:first-child{margin-top:0}
+.foot-note{font-size:13px;color:#7A6A5C;margin:24px 8px 0}
+
+/* 3 黑底按鈕改白底圓膠囊：.pill、.pill.mini.on、.menu、.who */
+.pill,.menu,.who{background:#fff;color:#3A2E26;border:1px solid rgba(58,46,38,.14);box-shadow:var(--sh)}
+.pill.lt,.pill.gl,.pill.mini{border:0;box-shadow:none}
+.pill.mini.on{background:#fff;color:#3A2E26;border:1px solid rgba(58,46,38,.14);box-shadow:var(--sh)}
+.pill.mini.on .i-edit,.pill.mini.edt.on .i-edit{background:#FF7A00}
+
+/* 2 緊急頁 */
+.pill.urgent{flex:1 1 100%;min-height:48px;background:#fff;color:#C2402A;border:1px solid #C2402A;font-weight:700}
+.cr li{background:transparent;border-radius:0;padding:16px 0;margin-bottom:0;border-bottom:1px solid rgba(17,17,17,.07)}
+.cr li:last-child{border-bottom:none}
+.cr li::before{flex:0 0 32px;height:32px;background:#fff;border:1.5px solid #3A2E26;color:#3A2E26}
+.cr li:first-child::before{background:#fff;border-color:#C2402A;color:#C2402A}
+.cr li>div>b{font-size:16px}
+.cr li>div>span{font-size:13px;color:#7A6A5C}
