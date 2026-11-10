@@ -847,3 +847,22 @@ body.bnav-hide .bnav{transform:translateY(130%)}
 .cr li:first-child::before{background:#fff;border-color:#C2402A;color:#C2402A}
 .cr li>div>b{font-size:16px}
 .cr li>div>span{font-size:13px;color:#7A6A5C}
+
+/* ===== patch-css: 口袋名單 ===== */
+#t-now[data-nt="pool"] .pt-daily{display:none}
+#t-now:not([data-nt="pool"]) .pt-pool{display:none}
+.pt-top{justify-content:flex-end;margin-top:16px}
+.pt-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(17,17,17,.07)}
+.pt-row:last-child{border-bottom:none}
+.pt-main{flex:1;min-width:0}
+.pt-name{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600;color:#3A2E26}
+.pt-star{flex:0 0 auto}
+.pt-note{font-size:13px;color:#7A6A5C;margin:4px 0 0;white-space:pre-wrap}
+.pt-tag{display:inline-block;font-size:13px;color:#7A6A5C;margin-top:4px}
+
+/* pool spacing */
+#t-now .pt-pool{margin-top:16px}
+
+/* pool map */
+#t-now .pt-pool .mapbox{margin:16px 0 8px}
+#poolmap{width:100%;height:320px;border-radius:28px;overflow:hidden}

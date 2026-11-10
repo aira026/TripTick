@@ -124,6 +124,28 @@ function qaHint(el,msg){
     wrap.appendChild(h);
   }
 }
+const STAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9 6.7 19.6l1-5.8L3.5 9.7l5.9-.9L12 3.5z"/></svg>';
+function renderAreaChips() {
+  const form = document.getElementById("qa-form");
+  const d = form && form._qa;
+  if (!d || !d.chips) return;
+  const a = api();
+  const t = a.T0 ? a.T0() : null;
+  const list = t && a.poolAreas ? a.poolAreas(t) : [];
+  const cur = d.area.value.trim();
+  d.chips.innerHTML = "";
+  list.forEach((name) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "qa-chip" + (name === cur ? " on" : "");
+    b.textContent = name;
+    b.addEventListener("click", () => {
+      d.area.value = name;
+      renderAreaChips();
+    });
+    d.chips.appendChild(b);
+  });
+}
 function buildForm() {
   const form = document.getElementById("qa-form");
   form.innerHTML = "";
@@ -132,6 +154,10 @@ function buildForm() {
     ? a.getLocalDateStr()
     : "";
   renderStop();
+  if (currentType === "place") {
+    document.getElementById("qa-stop").innerHTML = "";
+    stopValue = "";
+  }
   if (currentType === "expense") {
     const amount = field("金額", (() => {
       const i = document.createElement("input");
@@ -173,14 +199,63 @@ function buildForm() {
     content.focus();
     form._qa = { content };
   } else {
-    const content = field("地點名稱或 Google 地圖連結", (() => {
+    const content = field("地點名稱", (() => {
       const i = document.createElement("input");
-      i.type = "url";
-      i.placeholder = "例如 鯉魚潭 或 https://maps.google.com/?q=…";
+      i.type = "text";
+      i.placeholder = "例如 鯉魚潭";
+      i.autocomplete = "off";
+      i.maxLength = 60;
       return i;
     })());
+    const area = field("區域（選填）", (() => {
+      const i = document.createElement("input");
+      i.type = "text";
+      i.placeholder = "例如 古城";
+      i.autocomplete = "off";
+      i.maxLength = 20;
+      i.addEventListener("input", renderAreaChips);
+      return i;
+    })());
+    const chips = document.createElement("div");
+    chips.className = "qa-chips";
+    area.parentNode.appendChild(chips);
+    const must = field("必去（選填）", (() => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "qa-star";
+      b.setAttribute("aria-label", "必去");
+      b.setAttribute("aria-pressed", "false");
+      b.innerHTML = STAR_SVG;
+      b.addEventListener("click", () => {
+        b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
+      });
+      return b;
+    })());
+    const note = field("備註（選填）", (() => {
+      const i = document.createElement("input");
+      i.type = "text";
+      i.autocomplete = "off";
+      i.maxLength = 200;
+      return i;
+    })());
+    const addr = field("地址（選填，定位更準）", (() => {
+      const i = document.createElement("input");
+      i.type = "text";
+      i.placeholder = "例如 台中市西區民權路99號";
+      i.autocomplete = "off";
+      i.maxLength = 100;
+      return i;
+    })());
+    form._qa = { content, area, chips, must, note, addr };
+    if (editMode && editMode.kind === "place") {
+      content.value = editMode.name;
+      area.value = editMode.area;
+      note.value = editMode.note;
+      addr.value = editMode.addr;
+      must.setAttribute("aria-pressed", String(editMode.must));
+    }
+    renderAreaChips();
     content.focus();
-    form._qa = { content };
   }
 }
 function readForm() {
@@ -197,7 +272,14 @@ function readForm() {
     return { ...base, amount, currency: d.currency.value, memo: d.memo.value.trim() };
   }
   if (currentType === "place") {
-    if (!d.content.value.trim()) return null;
+    return {
+      ...base,
+      content: d.content.value.trim(),
+      area: d.area.value.trim(),
+      note: d.note.value.trim(),
+      addr: d.addr ? d.addr.value.trim() : "",
+      must: d.must.getAttribute("aria-pressed") === "true",
+    };
   }
   return { ...base, content: d.content.value.trim() };
 }
@@ -205,12 +287,15 @@ function readForm() {
 export function openQuickAdd(opts) {
   installStyle();
   createEl();
-  if (opts && opts.mode === "edit-note") {
+  if (opts && opts.mode === "edit-place") {
+    editMode = { kind: "place", id: opts.id, name: opts.name || "", area: opts.area || "", note: opts.note || "", addr: opts.addr || "", must: !!opts.must };
+    currentType = "place";
+  } else if (opts && opts.mode === "edit-note") {
     editMode = { id: opts.id, text: opts.text || "" };
     currentType = "note";
-  } else if (opts && opts.type === "note") {
+  } else if (opts && (opts.type === "note" || opts.type === "place")) {
     editMode = null;
-    currentType = "note";
+    currentType = opts.type;
   } else {
     editMode = null;
     currentType = readLastType();
@@ -219,6 +304,7 @@ export function openQuickAdd(opts) {
     b.classList.toggle("on", b.dataset.qt === currentType)
   );
   bindEvents();
+  { const tb = document.querySelector(".qa-tabs"); if (tb) tb.style.display = editMode ? "none" : ""; }
   buildForm();
   document.body.classList.add("qa-open");
 }
@@ -457,6 +543,53 @@ function installStyle() {
       background-size: 16px;
       cursor: pointer;
     }
+    .qa-hint {
+      font-size: 13px;
+      color: #C2402A;
+    }
+    .qa-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .qa-chip {
+      min-height: 44px;
+      padding: 0 16px;
+      border: 1px solid #EADFCF;
+      border-radius: 999px;
+      background: #fff;
+      color: #7A6A5C;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .qa-chip.on {
+      color: #3A2E26;
+      font-weight: 700;
+    }
+    .qa-star {
+      align-self: flex-start;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 1px solid #EADFCF;
+      border-radius: 999px;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+    .qa-star svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: #FF7A00;
+      stroke-width: 1.75;
+      stroke-linejoin: round;
+    }
+    .qa-star[aria-pressed="true"] svg {
+      fill: #FF7A00;
+    }
     @media (prefers-reduced-motion: reduce) {
       .qa-scrim,
       .qa-sheet {
@@ -593,15 +726,39 @@ function bindEvents() {
       a.toast("已記下");
       return;
     }
-    drafts.push({ id: rnd(8), ts: Date.now(), ...data });
-    if (a.toast) a.toast("已儲存（示範）");
-    else console.warn("[quick-add] toast 不可用");
-    close();
-    form.querySelectorAll("input, textarea, select").forEach((el) => {
-      el.value = "";
-      if (el.tagName === "SELECT") el.selectedIndex = 0;
-    });
-    stopValue = "";
+    // 地點：連續新增。存完不關閉，只清空名稱／備註／必去，保留區域。
+    const t = a.T0 ? a.T0() : null;
+    const nameEl = form._qa && form._qa.content;
+    if (!t) { a.toast("請先建立行程"); return; }
+    if (!a.canEdit || !a.canEdit(t)) { a.toast("無法編輯此行程"); return; }
+    if (!a.addPoolPlace) { a.toast("儲存功能不可用"); return; }
+    if (!data.content) {
+      qaHint(nameEl, "請輸入地點名稱");
+      if (nameEl) nameEl.focus();
+      return;
+    }
+    if (/^https?:\/\//i.test(data.content)) {
+      qaHint(nameEl, "貼連結收藏之後開放，請先輸入名稱");
+      if (nameEl) nameEl.focus();
+      return;
+    }
+    qaHint(nameEl, "");
+    if (editMode && editMode.kind === "place") {
+      if (!a.editPoolPlace) { a.toast("儲存功能不可用"); return; }
+      if (!a.editPoolPlace(t, editMode.id, { name: data.content, area: data.area, addr: data.addr, must: data.must, note: data.note })) return;
+      close();
+      a.toast("已更新");
+      return;
+    }
+    if (!a.addPoolPlace(t, { name: data.content, area: data.area, addr: data.addr, must: data.must, note: data.note })) return;
+    const d = form._qa;
+    d.content.value = "";
+    d.note.value = "";
+    if (d.addr) d.addr.value = "";
+    d.must.setAttribute("aria-pressed", "false");
+    renderAreaChips();
+    d.content.focus();
+    a.toast("已加入口袋名單");
   });
 }
 
