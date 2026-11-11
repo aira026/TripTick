@@ -1556,7 +1556,7 @@ render(t){try{if(this.m)this.m.remove()}catch(e){}this.m=null;const el=document.
  this.sel=null;this.m.on("popupclose",()=>{this.sel=null});
  const ll=[];
  pts.forEach(p=>{const on=!!placed[p.id];ll.push([p.lat,p.lng]);
-  const d=document.createElement("div");d.textContent=p.name+(on?"・已排 "+placed[p.id]:"")+(p.area?"・"+p.area:"");
+  const d=document.createElement("div");d.style.cssText="font-size:13px;line-height:1.5;color:#3A2E26";const h=document.createElement("b");h.style.fontSize="16px";h.textContent=p.name;d.appendChild(h);const meta=[p.must?"必去":"",on?"已排 "+placed[p.id]:"",p.area||""].filter(Boolean).join("・");if(meta){const m=document.createElement("div");m.style.color="#7A6A5C";m.textContent=meta;d.appendChild(m)}if(p.note){const n=document.createElement("div");n.style.cssText="margin-top:4px;white-space:pre-wrap";n.textContent=p.note;d.appendChild(n)}const nv=document.createElement("a");nv.className="pill gl mini";nv.target="_blank";nv.rel="noopener";nv.textContent="導航";nv.style.cssText="display:inline-flex;align-items:center;justify-content:center;margin-top:8px;color:#3A2E26;text-decoration:none";nv.href="https://www.google.com/maps/dir/?api=1&destination="+p.lat+","+p.lng+"&travelmode=walking";d.appendChild(nv);
   const mk=L.circleMarker([p.lat,p.lng],{radius:p.must?9:7,color:on?"#FFFFFF":"#FF7A00",weight:on?2:2.5,fillColor:"#FF7A00",fillOpacity:on?.9:0}).addTo(this.m);
   mk.on("click",e=>{L.DomEvent.stopPropagation(e);if(this.sel===p.id){this.reset();return}
    const tok=++this.tok,open=()=>{if(tok!==this.tok)return;L.popup({offset:[0,-4],maxWidth:240,autoPan:true,autoPanPadding:[20,20],closeOnClick:false}).setLatLng([p.lat,p.lng]).setContent(d).openOn(this.m);this.sel=p.id};
@@ -1565,7 +1565,7 @@ render(t){try{if(this.m)this.m.remove()}catch(e){}this.m=null;const el=document.
 reset(){if(!this.m)return;this.tok++;this.m.closePopup();this.sel=null;if(this.ll.length)this.m.flyToBounds(this.ll,{padding:[30,30],maxZoom:14,duration:.8})},
 refresh(){setTimeout(()=>{try{if(!this.m)return;this.m.invalidateSize();if(this.ll.length)this.m.fitBounds(this.ll,{padding:[30,30],maxZoom:14})}catch(e){}},80)}};
 function poolMapHTML(t){const ms=poolOf(t).filter(p=>p&&p.lat==null),miss=ms.length;
- return`<div class="glass mapbox"><div id="poolmap" class="nowmap" role="application" aria-label="口袋名單地圖"></div></div><p class="meta" style="margin:8px 4px 0">空心點＝還沒排進行程，實心點＝已排。${miss?`有 ${miss} 個地點沒標到地圖：${esc(ms.slice(0,8).map(p=>p.name).join("、"))}。<button class="pill mini" data-a="poolgeo">重新查詢</button>`:""}</p>`}
+ return`<div class="glass mapbox"><div id="poolmap" class="nowmap" role="application" aria-label="口袋名單地圖"></div></div><p class="meta" style="margin:8px 4px 0">空心圓表示尚未排入行程，實心圓表示已排入行程。${miss?`有 ${miss} 個地點沒標到地圖：${esc(ms.slice(0,8).map(p=>p.name).join("、"))}。<button class="pill mini" data-a="poolgeo">重新查詢</button>`:""}</p>`}
 function dailyMissingHTML(t){const m=[];getDays(t).forEach(d=>(d.items||[]).forEach(x=>{if(x&&x.q&&x.lat==null)m.push(x.h||x.q)}));
  if(!m.length)return"";
  return`<p class="meta" style="margin:8px 4px 0">有 ${m.length} 個景點沒標到地圖：${esc(m.slice(0,8).join("、"))}${m.length>8?"…":""}。「地點」改成「店名 城市」較容易找到。<button class="pill mini" data-a="georetry">重新查詢</button></p>`}
