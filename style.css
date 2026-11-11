@@ -923,3 +923,12 @@ body:not(.editing) #live:has(.lvoff){display:none}
 /* ===== patch-css: 住宿列圖示 ===== */
 .it.stay .act .cb{background:transparent;color:#7a7a7a}
 .it.stay .i-edit{background:#6a6a6a}
+
+/* patch-today1: 今天頁（沒排行程） */
+#t-today .td-head{margin:8px 0 16px}
+#t-today .td-title{font-family:Georgia,"Noto Serif TC","Songti TC",serif;font-size:24px;font-weight:600;color:#3A2E26;margin:0}
+#t-today .td-sub{font-size:13px;color:#7A6A5C;margin:4px 0 0}
+#t-today .td-ask{font-size:16px;color:#3A2E26;margin:0 0 8px}
+#t-today .td-empty p{font-size:16px;color:#3A2E26;margin:0 0 16px}
+#t-today .td-go{flex:0 0 auto;min-height:44px;padding:0 16px;border-radius:999px;background:transparent;border:1px solid rgba(17,17,17,.12);color:#3A2E26;font-size:13px;font-weight:500;cursor:pointer}
+#t-today .pt-row{padding:8px 0}

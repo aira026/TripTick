@@ -788,6 +788,7 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
   if(a==="poolnew"){window.openQuickAdd?.({type:"place"});return}
   if(a==="poolplan"&&t){poolPlanForm(t,v);return}
   if(a==="poolplanok"&&t){poolPlanSave(t);return}
+  if(a==="todaygo"&&t){const i=todayDayIdx(t,window.__TODAY||getLocalDateStr());if(i>=0)dayI[t.id]=i;poolPlanForm(t,v);return}
   if(a==="pooldel"&&t){QA_API.deletePoolPlace(t,v);return}
   if(a==="pooledit"&&t){const p=poolOf(t).find(x=>x&&x.id===v);if(!p){toast("找不到這筆");return}window.openQuickAdd?.({mode:"edit-place",id:p.id,name:p.name,area:p.area||"",note:p.note||"",addr:p.addr||"",must:!!p.must});return}
  if(a==="stormtab"){stormTab=v;$("#t-storm").innerHTML=bar()+stormHTML(T0());return}
@@ -884,6 +885,21 @@ document.addEventListener("click",e=>{
   },{passive:true});
 })();
 // 今天分頁：四種狀態先放佔位。測試用：在 Console 設 window.__TODAY="2027-01-16" 再 go("today")
+// 今天沒排：口袋名單挑一個
+function todayDayIdx(t,today){const D=getDays(t),dates=D.map(d=>getDayDateStr(t,d));let i=dates.some(Boolean)?dates.indexOf(today):parseYMD(today)-parseYMD(t.startDate);return i>=0&&i<D.length?i:-1}
+function todayPickHTML(t,today){
+  const i=todayDayIdx(t,today),d=i>=0?getDays(t)[i]:null,city=(d&&d.city)||"",
+    sub=d?[d.k||"D"+(i+1),d.date].filter(Boolean).join("・"):"",
+    can=!!me&&(t.members||[]).includes(me.uid),placed=poolPlaced(t),
+    head='<div class="td-head"><h2 class="td-title">今天</h2>'+(sub?'<p class="td-sub">'+esc(sub+(city?"・"+city:""))+'</p>':"")+'</div>';
+  const L=poolOf(t).filter(p=>p&&!placed[p.id]);
+  if(!L.length)return head+'<div class="td-empty"><p>'+(poolOf(t).length?"口袋名單的景點都排進行程了。":"今天還沒排，口袋名單也是空的。")+'</p>'+(can?'<div class="pills"><button class="pill" data-a="poolnew">新增口袋名單</button></div>':"")+'</div>';
+  const near=p=>city&&p.area&&(p.area.includes(city)||city.includes(p.area))?1:0;
+  L.sort((a,b)=>near(b)-near(a)||(b.must?1:0)-(a.must?1:0));
+  const star='<svg class="ix pt-star" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="#FF7A00" stroke="#FF7A00" stroke-width="1.75" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9 6.7 19.6l1-5.8L3.5 9.7l5.9-.9L12 3.5z"/></svg>';
+  const row=p=>'<div class="pt-row"><div class="pt-main"><div class="pt-name">'+(p.must?star:"")+'<span>'+esc(p.name)+'</span></div>'+(p.area?'<p class="pt-note">'+esc(p.area)+'</p>':"")+'</div>'+(can?'<button class="td-go" data-a="todaygo" data-v="'+esc(p.id)+'">今天去這個</button>':"")+'</div>';
+  return head+'<p class="td-ask">今天還沒排，從口袋名單挑一個？</p><div class="td-list">'+L.map(row).join("")+'</div>';
+}
 function renderToday(){
   const el=$("#t-today");if(!el)return;
   const today=window.__TODAY||getLocalDateStr(),t=T0();
@@ -893,7 +909,7 @@ function renderToday(){
   if(st==="ongoing"){
     const it=getTodayItems(t,today);
     if(it.length){renderCurrent(t,$("#t-today"));return;}
-    html=card("今天沒排","附近待選點＋「今天去這個」");
+    el.innerHTML=todayPickHTML(t,today);return;
   }else if(st==="ended"){
     html=card("旅程結束","回憶摘要＋提示歸檔");
   }else{
