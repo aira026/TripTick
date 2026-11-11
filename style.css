@@ -903,3 +903,23 @@ body.bnav-hide .bnav{transform:translateY(130%)}
 .fm .dietrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 16px}
 .fm .dietrow small{flex:0 0 100%;font-size:13px;color:#7A6A5C}
 .fm .dietrow .chk{min-height:40px;padding:0 14px 0 10px;border-radius:999px;background:rgba(255,255,255,.8);border:1px solid rgba(17,17,17,.08);font-size:13px;color:#3A2E26}
+
+/* ===== patch-css: 行程頁架構 / 住宿標示 / 飲食選項 ===== */
+.tools{display:grid;grid-template-columns:repeat(5,1fr);margin:16px 0 8px;border-top:1px solid rgba(17,17,17,.07);border-bottom:1px solid rgba(17,17,17,.07)}
+.tl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;padding:8px 0;background:transparent;border:0;color:#3A2E26;font-size:13px;font-weight:500;cursor:pointer}
+.tl svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.tl.sos svg{stroke:#C2402A}
+.tl:active{transform:scale(.96)}
+#t-now .bottom-shortcuts-row{display:none}
+body:not(.editing) #live:has(.lvoff){display:none}
+.dtools .pill.gl{background:transparent;border:1px solid rgba(17,17,17,.12);color:#3A2E26;font-weight:500}
+.it.stay{background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.7);border-radius:16px;padding:16px;margin:8px 0}
+.it .bd>em.tag{display:inline-flex;align-items:center;gap:6px;margin:6px 0 0;padding:2px 10px;border-radius:999px;background:rgba(17,17,17,.07);color:#3A2E26;font-size:13px;font-style:normal;font-weight:600}
+.it .bd>em.tag.stay::before{content:"";width:6px;height:6px;border-radius:50%;background:#FF7A00}
+.it.crit .bd>em.tag{background:rgba(194,64,42,.1);color:#C2402A}
+.fm .dietrow .chk{display:flex;align-items:center;gap:8px;height:40px;min-height:40px;margin:0;padding:0 14px 0 10px;line-height:1}
+.fm .dietrow .chk input{margin:0}
+
+/* ===== patch-css: 住宿列圖示 ===== */
+.it.stay .act .cb{background:transparent;color:#7a7a7a}
+.it.stay .i-edit{background:#6a6a6a}
