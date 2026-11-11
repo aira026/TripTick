@@ -824,6 +824,9 @@ body.bnav-hide .bnav{transform:translateY(130%)}
 .more-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:96px;border-radius:28px;border:1px solid rgba(255,255,255,.45);background:rgba(255,252,246,.72);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:var(--sh);color:var(--ink);font:inherit;font-weight:600;text-align:center;cursor:pointer}
 .more-card .ic{width:22px;height:22px;margin:0}
 .more-card:active{opacity:.85}
+.more-card svg{display:block;flex:none;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.more-card.sos{grid-column:1/-1;flex-direction:row;gap:8px;min-height:64px}
+.more-card.sos svg{stroke:#C2402A}
 
 /* ===== patch-css: 備忘錄頁、緊急頁、白底圓膠囊按鈕 ===== */
 
@@ -905,11 +908,6 @@ body.bnav-hide .bnav{transform:translateY(130%)}
 .fm .dietrow .chk{min-height:40px;padding:0 14px 0 10px;border-radius:999px;background:rgba(255,255,255,.8);border:1px solid rgba(17,17,17,.08);font-size:13px;color:#3A2E26}
 
 /* ===== patch-css: 行程頁架構 / 住宿標示 / 飲食選項 ===== */
-.tools{display:grid;grid-template-columns:repeat(5,1fr);margin:16px 0 8px;border-top:1px solid rgba(17,17,17,.07);border-bottom:1px solid rgba(17,17,17,.07)}
-.tl{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px;padding:8px 0;background:transparent;border:0;color:#3A2E26;font-size:13px;font-weight:500;cursor:pointer}
-.tl svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
-.tl.sos svg{stroke:#C2402A}
-.tl:active{transform:scale(.96)}
 #t-now .bottom-shortcuts-row{display:none}
 body:not(.editing) #live:has(.lvoff){display:none}
 .dtools .pill.gl{background:transparent;border:1px solid rgba(17,17,17,.12);color:#3A2E26;font-weight:500}
