@@ -1,7 +1,7 @@
-# 歷歷 TripTick 專案摘要卡 v10
+# 歷歷 TripTick 專案摘要卡 v11
 
 更新日期：2026/11/11
-狀態：口袋名單完整（連結收藏、定位城市、圖釘小卡、排入行程）與每日頁／行程頁減法改版完成並實測通過（分支 feature/nav，本機領先 origin，尚未 push）。下一步見「下一步」。
+狀態：口袋名單完整、每日頁／行程頁減法改版、「今天」頁（沒排行程時挑口袋名單）完成並實測通過（分支 feature/nav，本機領先 origin，尚未 push）。下一步見「下一步」。
 
 ## 一句話
 旅伴再問「下一站去哪」，打開歷歷就知道。
@@ -36,7 +36,7 @@
 1. 行程狀態由日期自動計算，不手動切換「當前」
 2. 首頁分三區：進行中／即將出發／規劃中，點卡片直接編輯
 3. 景點三狀態：待選／排在某天／排在某天某時（待選＝口袋名單；「排入行程」已完成，帶 pid）
-4. 今天沒排時，現場模式顯示附近待選點＋「今天去這個」（未做；可重用 poolPlanForm／poolPlanSave）
+4. 今天沒排時，現場模式顯示待選點＋「今天去這個」（已完成 2026/11/11：依區域排序，不用 GPS；重用 poolPlanForm／poolPlanSave）
 5. 貼 Google 地圖連結收藏景點（已完成：只收完整連結）
 6. 圖卡免登入，存檔或下載才登入
 7. 傳播三條線：圖卡（後）、旅伴邀請（前中，旅伴免登入可看）、模板複製（前）
@@ -102,6 +102,13 @@
 - 項目類型：新增／編輯行程表單有「類型」下拉（一般／住宿／重要班次，欄位 item.type="stay"/"crit"；未知舊值會保留）。住宿＝淡白底圓角＋「住宿」標籤（橘色小圓點）；重要班次＝紅色左邊線＋淡紅標籤。飲食屬性改為圓角小標籤（.dietrow）
 - 行程頁：深色大卡改淺色（.glass.dark.hero 覆寫）；Booking／成員／帳本／飲食卡／緊急為圖示工具列（.tools／.tl，緊急圖示警示紅）；頁尾重複捷徑列在 #t-now 隱藏；「非行程時段／預覽行程」只在編輯模式出現（.lvoff.ed）；旅程進行中的「現在／下一步」卡片未動
 
+### 「今天」頁（2026/11/11 完成）
+- 旅途中今天沒排：renderToday 呼叫 todayPickHTML(t,today)。標題「今天」（24 襯線）＋小字「D?・日期・城市」＋一句話＋清單（尚未排進行程的口袋名單；細分隔線、無卡片；必去星星；區域灰字；右側「今天去這個」透明外框膠囊 44 高）。排序：區域與今天城市相符優先，再必去。口袋名單空或全排完：一句話＋「新增口袋名單」（data-a="poolnew"）
+- 「今天去這個」：data-a="todaygo" data-v=口袋名單 id，主 switch 內先把 dayI[t.id] 設為今天（todayDayIdx），再呼叫 poolPlanForm(t,v)；排入後 render() 重畫，該列消失、今天頁變成有行程的狀態
+- 測試今天沒排：Console 設 `window.__TODAY="2027-01-20"`（只影響該分頁，重新整理失效），再點底部「今天」。go 沒掛 window，不能直接呼叫
+- 有行程的今天頁（renderCurrent）只做文字層級小改：刪掉重複的「D1 現在時間」列、標題襯線 24、時間深棕 16 粗、「現在」標籤前加橘點、底部導覽目前頁加橘點。**導航圓鈕、上一站／回到當下／下一站三顆圓鈕與卡片位置刻意維持原樣**（試過底部操作列與拿掉按鈕，使用者實測覺得更差，已還原）。排版是否符合單手／戴手套，等手機實測截圖後再逐項調，不一次大改
+- 注意：renderCurrent 同時給 #t-today 與 #t-current 用
+
 ## 資料接口（QA_API，app.js 底部）
 { toast, esc, getLocalDateStr, getTodayItems, T0, addExpense, addMemoEntry, editMemoEntry, deleteMemoEntry, addPoolPlace, editPoolPlace, deletePoolPlace, poolAreas, canEdit }
 - 寫入規則：先檢查登入與成員（_poolGuard）→ 建新物件（不可原地修改舊資料）→ patch（不 await）→ render() → 回傳 true/false
@@ -145,17 +152,16 @@
 - 分段切換狀態重新整理不保留
 - 定位準確度（OpenStreetMap）：地址含縣市最準；只填名稱＋含糊區域（如「東區」）可能配到別的城市，且配錯無法偵測；台灣地名 OSM 多用「臺」。區域欄目前同時當定位線索，是已知取捨（改法見下一步）
 - 定位失敗的點會多等數秒；Nominatim 限速約 1 次/秒
-- 「今天」頁尚未套用減法改版
+- 「今天」有行程的畫面：按鈕與版面維持舊樣式，尚未做手機單手實測
 - 彈層「在哪一站」清單 CSS 為 display:none，疑似看不到清單（地點分頁已隱藏，花費／備註分頁可能受影響，待手機實測）
 - 舊備忘沒有日期，固定排在「未標日期」最下面
 - hokkaido.html 是靜態展示頁，與 app 無關
 
 ## 下一步（建議順序）
-1. 「今天」頁：沒排行程時依區域顯示口袋名單＋「今天去這個」（重用 poolPlanForm／poolPlanSave，天固定為今天）；順便套用減法改版
-2. 其餘黑底元素逐項改版（.glass.dark 其他頁、.toast、#undo、#updbar、#offbar、.drawer 內 button.on／.login／.sub.on、.story-stage、.days button.on／.plus、.bar button.on、.chip）；白底 .pill 看不清處檢查（.pc-act、.codebox、.story-foot）
-3. 旅程進行中的「現在／下一步」卡片與行程頁其他分頁（票券、備忘錄）套用減法
-4. T0() 改日期自動計算；首頁三區、漢堡選單四類
-5. 整併 addex 與 addExpense；app.js 底部測試用 window 掛載清理
+1. 其餘黑底元素逐項改版（.glass.dark 其他頁、.toast、#undo、#updbar、#offbar、.drawer 內 button.on／.login／.sub.on、.story-stage、.days button.on／.plus、.bar button.on、.chip）；白底 .pill 看不清處檢查（.pc-act、.codebox、.story-foot）
+2. 旅程進行中的「現在／下一步」卡片與行程頁其他分頁（票券、備忘錄）套用減法；今天頁排版等手機截圖再議
+3. T0() 改日期自動計算；首頁三區、漢堡選單四類
+4. 整併 addex 與 addExpense；app.js 底部測試用 window 掛載清理
 
 ## 待辦
 - T0() 改用日期自動計算，移除手動 status:"now"
@@ -197,4 +203,7 @@
 - 本機用 localhost:5500；改完 app.js／quick-add.js／style.css 要升 sw.js 版本號
 - Claude 交腳本前，先用上傳檔案的副本在沙盒試跑，確認全部命中、語法檢查通過
 - 腳本已套用過再跑會顯示「找到 0 處」並停下，屬正常，不會改檔
+- 只改使用者要求的範圍，使用者說「樣式我改過、不用動」的部分不動；排版調整先講診斷與方案、確認後再寫腳本，一次只改一類
+- 腳本交出後，要先確認使用者是否已跑過前一版；腳本一律以「使用者目前的檔案狀態」為基準，找不到就停下並請使用者回報 `git status --short`、`git diff --stat`
+- 還原用 revert 腳本或 git checkout（commit 前的改動可用）；使用者說「更差」就先整個退回，再討論
 - 是否買 Claude API 接 Cline：評估後暫不買（流程已有腳本保險）；若試用，先小額儲值並設月上限
