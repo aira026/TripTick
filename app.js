@@ -1542,7 +1542,7 @@ function poolHTML(t){
   const star='<svg class="ix pt-star" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="#FF7A00" stroke="#FF7A00" stroke-width="1.75" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9 6.7 19.6l1-5.8L3.5 9.7l5.9-.9L12 3.5z"/></svg>';
   const xs='<svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   const row=p=>{const q=encodeURIComponent((p.q||p.name||"")+(t.country?" "+t.country:""));
-    return`<div class="pt-row"><div class="pt-main"><div class="pt-name">${p.must?star:""}<span>${esc(p.name)}</span></div>${p.note?`<p class="pt-note">${esc(p.note)}</p>`:""}${placed[p.id]?`<span class="pt-tag">已排 ${esc(placed[p.id])}</span>`:""}${p.lat==null?`<span class="pt-tag">未標到地圖</span>`:""}</div><a class="cb" href="https://maps.google.com/?q=${q}" target="_blank" rel="noopener">開啟地圖</a><button class="x ed" data-a="pooledit" data-v="${esc(p.id)}" aria-label="編輯"><i class=i-edit></i></button><button class="x ed" data-a="pooldel" data-v="${esc(p.id)}" aria-label="刪除">${xs}</button></div>`};
+    return`<div class="pt-row"><div class="pt-main"><div class="pt-name">${p.must?star:""}<span>${esc(p.name)}</span></div>${p.note?`<p class="pt-note">${esc(p.note)}</p>`:""}${placed[p.id]?`<span class="pt-tag">已排 ${esc(placed[p.id])}</span>`:""}${p.lat==null?`<span class="pt-tag">未標到地圖</span>`:""}</div>${p.lat==null?`<a class="cb" href="https://maps.google.com/?q=${q}" target="_blank" rel="noopener">開啟地圖</a>`:""}<button class="x ed" data-a="pooledit" data-v="${esc(p.id)}" aria-label="編輯"><i class=i-edit></i></button><button class="x ed" data-a="pooldel" data-v="${esc(p.id)}" aria-label="刪除">${xs}</button></div>`};
   const head=g=>(g.k||groups.length>1)?`<div class="me-day">${esc(g.k||"未分區")}</div>`:"";
   return`<div class="pt-pool">${can?`<div class="pills pt-top">${addBtn}</div>`:""}${poolMapHTML(t)}${groups.map(g=>head(g)+g.items.slice().sort((a,b)=>(b.must?1:0)-(a.must?1:0)).map(row).join("")).join("")}</div>`
 }
@@ -1564,8 +1564,10 @@ render(t){try{if(this.m)this.m.remove()}catch(e){}this.m=null;const el=document.
  this.ll=ll;this.refresh()},
 reset(){if(!this.m)return;this.tok++;this.m.closePopup();this.sel=null;if(this.ll.length)this.m.flyToBounds(this.ll,{padding:[30,30],maxZoom:14,duration:.8})},
 refresh(){setTimeout(()=>{try{if(!this.m)return;this.m.invalidateSize();if(this.ll.length)this.m.fitBounds(this.ll,{padding:[30,30],maxZoom:14})}catch(e){}},80)}};
+let poolMapOpen=true;
 function poolMapHTML(t){const ms=poolOf(t).filter(p=>p&&p.lat==null),miss=ms.length;
- return`<div class="glass mapbox"><div id="poolmap" class="nowmap" role="application" aria-label="口袋名單地圖"></div></div><p class="meta" style="margin:8px 4px 0">空心圓表示尚未排入行程，實心圓表示已排入行程。${miss?`有 ${miss} 個地點沒標到地圖：${esc(ms.slice(0,8).map(p=>p.name).join("、"))}。<button class="pill mini" data-a="poolgeo">重新查詢</button>`:""}</p>`}
+ const tg=`<div class="pills" style="margin:0 0 8px"><button class="pill gl mini" data-a="poolmaptoggle">${poolMapOpen?"收合地圖":"顯示地圖"}</button></div>`,note=(poolMapOpen?"空心圓表示尚未排入行程，實心圓表示已排入行程。":"")+(miss?`有 ${miss} 個地點沒標到地圖：${esc(ms.slice(0,8).map(p=>p.name).join("、"))}。<button class="pill mini" data-a="poolgeo">重新查詢</button>`:"");
+ return tg+(poolMapOpen?`<div class="glass mapbox"><div id="poolmap" class="nowmap" role="application" aria-label="口袋名單地圖"></div></div>`:"")+(note?`<p class="meta" style="margin:8px 4px 0">${note}</p>`:"")}
 function dailyMissingHTML(t){const m=[];getDays(t).forEach(d=>(d.items||[]).forEach(x=>{if(x&&x.q&&x.lat==null)m.push(x.h||x.q)}));
  if(!m.length)return"";
  return`<p class="meta" style="margin:8px 4px 0">有 ${m.length} 個景點沒標到地圖：${esc(m.slice(0,8).join("、"))}${m.length>8?"…":""}。「地點」改成「店名 城市」較容易找到。<button class="pill mini" data-a="georetry">重新查詢</button></p>`}
@@ -1581,5 +1583,6 @@ async function poolGeoAll(tid,quiet){if(poolGeoBusy){poolGeoAgain=true;return}po
  }while(poolGeoAgain)}finally{poolGeoBusy=false}}
 document.addEventListener("click",e=>{const b=e.target.closest('[data-a="poolgeo"],[data-a="georetry"]');if(!b)return;const t=T0();if(!t)return;
  if(b.dataset.a==="poolgeo")poolGeoAll(t.id,false);else{toast("重新查詢中…");geocodeAI(t.id)}});
+document.addEventListener("click",e=>{if(!e.target.closest('[data-a="poolmaptoggle"]'))return;poolMapOpen=!poolMapOpen;render()});
 // ===== /口袋名單地圖 =====
 window.QA_API = { toast, esc, getLocalDateStr, getTodayItems, T0, addExpense, addMemoEntry, editMemoEntry, deleteMemoEntry, addPoolPlace, editPoolPlace, deletePoolPlace, poolAreas, canEdit:(t)=>!!me&&!!t&&(t.members||[]).includes(me.uid) };
