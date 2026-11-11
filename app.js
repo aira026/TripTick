@@ -690,7 +690,8 @@ function pcExpToggle(b){const el=b.closest(".pc-item");if(el)pcToggle(el,!el.cla
 function form(st,id){const t0=TRIPS.find(x=>x.id===id),t=t0?{...t0,status:statusOf(t0)}:{status:st,spots:[]},sp=t.spots?.[0]||{};
  modal(`<h3>${id?"編輯旅程":"新增旅程"}</h3><div class="fm" data-id="${esc(id||"")}">
  <label>地點<input id="f-place" value="${esc(t.title)}" placeholder="例如：清邁" required></label>
- <label>國家<input id="f-country" list="cl" value="${esc(t.country)}" placeholder="例如：泰國" required></label><datalist id="cl">${Object.keys(FL).map(k=>`<option value="${k}">`).join("")}</datalist>
+ <label>國家<input id="f-country" list="cl" value="${esc(t.country)}" placeholder="例如：泰國" required></label>
+ <label>定位城市（選填）<input id="f-geocity" value="${esc(t.geoCity||"")}" placeholder="例如：台中（口袋名單定位用）" maxlength="20"></label><datalist id="cl">${Object.keys(FL).map(k=>`<option value="${k}">`).join("")}</datalist>
  <div class="two"><label>出發日<input id="f-s" type="date" value="${esc(t.startDate)}"></label><label>回程日<input id="f-e" type="date" value="${esc(t.endDate)}"></label></div>
  <label>類型<select id="f-st"><option value="now" ${t.status==="now"?"selected":""}>當前旅程</option><option value="past" ${t.status==="past"?"selected":""}>歷史旅程</option><option value="future" ${t.status==="future"?"selected":""}>未來清單</option></select></label>
  ${id&&t.status==="past"?`<label>排列順序（歷史列表由左至右）<input id="f-pos" type="number" inputmode="numeric" min="1" step="1" value="${pastPosOf(id)}"><span class="meta">1 = 最左邊。也可在列表長按卡片 0.5 秒直接拖曳排序。</span></label>`:""}
@@ -710,7 +711,7 @@ async function saveForm(){if(!me)return toast("請先登入");
  if(!isNaN(lat)&&!isNaN(lng)){if(spots.length&&spots[0].lat===lat&&spots[0].lng===lng){}else if(spots.length)spots[0]={...spots[0],lat,lng};else spots.push({name:place,lat,lng,day:1})}
  else if(!spots.length){toast("查詢座標中…");const g=await geo(place+", "+country);if(g)spots.push({name:place,lat:g[0],lng:g[1],day:1});else toast("找不到座標，可稍後編輯")}
  const s=v("e")&&v("s")?v("s"):v("s"),e=v("e"),nDays=s&&e?Math.max(1,Math.round((new Date(e)-new Date(s))/864e5)+1):(old?.nDays||1);
- const base={title:place,country,countryCode:FL[country]||"",startDate:s,endDate:e,image:v("image")||old?.image||"",notes:v("note"),nDays,spots},st=v("st"); /* 網址留空 → 保留已上傳的照片，避免被覆蓋成空白 */
+ const base={title:place,country,geoCity:v("geocity").slice(0,20),countryCode:FL[country]||"",startDate:s,endDate:e,image:v("image")||old?.image||"",notes:v("note"),nDays,spots},st=v("st"); /* 網址留空 → 保留已上傳的照片，避免被覆蓋成空白 */
  try{if(old){await patch(old,base);if(st==="now")await archiveNow(old.id);await setSt(old,st)}
  else{if(st==="now")await archiveNow("");const ref=doc(collection(db,"trips"));await setDoc(ref,{...clean({...base,days:[],booking:[],expenses:[],currency:CUR[country]||"TWD",diets:{},ext:EXT0,owner:me.uid,members:[me.uid],memberNames:{[me.uid]:me.displayName||"我"},st:{[me.uid]:st}}),createdAt:serverTimestamp()})}
  /* 排列順序：編輯彈窗的數字欄位（僅歷史旅程），寫入 localStorage 並立即重排 */
@@ -1572,7 +1573,7 @@ let poolGeoBusy=false,poolGeoAgain=false;
 async function poolGeoAll(tid,quiet){if(poolGeoBusy){poolGeoAgain=true;return}poolGeoBusy=true;
  try{do{poolGeoAgain=false;let t=TRIPS.find(x=>x.id===tid);if(!t||!_poolGuard(t))break;
   const todo=poolOf(t).filter(p=>p&&p.lat==null).slice(0,30),got={};let n=0;
-  for(const p of todo){let g=null;for(const q of[p.addr?p.addr+(t.country?" "+t.country:""):"",(p.q||p.name)+(p.area?" "+p.area:"")+(t.country?" "+t.country:"")]){if(!q)continue;g=await geo(q);if(g)break}n++;if(g)got[p.id]=g;if(!quiet)toast(`查詢座標 ${n}/${todo.length}`);await new Promise(r=>setTimeout(r,1100))}
+  for(const p of todo){let g=null;for(const q of[p.addr?p.addr+(t.country?" "+t.country:""):"",(p.q||p.name)+(t.geoCity?" "+t.geoCity:(p.area?" "+p.area:""))+(t.country?" "+t.country:"")]){if(!q)continue;g=await geo(q);if(g)break}n++;if(g)got[p.id]=g;if(!quiet)toast(`查詢座標 ${n}/${todo.length}`);await new Promise(r=>setTimeout(r,1100))}
   t=TRIPS.find(x=>x.id===tid);if(!t)break;let c=0;
   const next=poolOf(t).map(p=>{const g=p&&got[p.id];if(g&&p.lat==null){c++;return{...p,lat:g[0],lng:g[1]}}return p});
   if(c){patch(t,{pool:next});render()}
