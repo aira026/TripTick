@@ -1465,15 +1465,31 @@ function _poolGuard(t){
   if(!(t.members||[]).includes(me.uid)){toast("無法編輯此行程");return false}
   return true
 }
+function _gmapParse(s){
+  s=String(s||"").trim();
+  if(/^https?:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(s))return{err:"短連結無法解析，請在瀏覽器開啟後複製網址列的完整連結"};
+  if(!/^https?:\/\/((www|maps)\.)?google\.[a-z.]+\/maps/i.test(s))return{err:"目前只支援 Google 地圖的完整連結"};
+  let name="";const pm=s.match(/\/maps\/place\/([^\/@?]+)/);
+  if(pm){try{name=decodeURIComponent(pm[1].replace(/\+/g," ")).trim()}catch(e){name=pm[1].replace(/\+/g," ").trim()}}
+  if(!name)return{err:"連結裡沒有地名，請從地點頁面複製連結"};
+  const n="(-?\\d+(?:\\.\\d+)?)";
+  const m=s.match(new RegExp("!3d"+n+"!4d"+n))||s.match(new RegExp("@"+n+","+n))||s.match(new RegExp("[?&](?:q|ll|query)="+n+"(?:,|%2C)"+n));
+  if(!m)return{err:"連結裡找不到座標，請開啟地點後複製網址列的完整連結"};
+  const lat=+m[1],lng=+m[2];
+  if(!(Math.abs(lat)<=90&&Math.abs(lng)<=180))return{err:"連結裡的座標不正確"};
+  return{name,lat,lng}
+}
 function addPoolPlace(t,o){
   if(!_poolGuard(t))return false;
-  const nm=String((o&&o.name)||"").trim().slice(0,60);
+  let nm=String((o&&o.name)||"").trim(),geoPt=null;
+  if(/^https?:\/\//i.test(nm)){const g=_gmapParse(nm);if(g.err){toast(g.err);return false}nm=g.name;geoPt=[g.lat,g.lng]}
+  nm=nm.slice(0,60);
   if(!nm){toast("請輸入地點名稱");return false}
-  if(/^https?:\/\//i.test(nm)){toast("貼連結收藏之後開放，請先輸入名稱");return false}
   const list=poolOf(t);
   if(list.some(p=>_poolKey(p.name)===_poolKey(nm))){toast("已經在口袋名單了");return false}
   if(list.length>=200){toast("口袋名單已滿（200 筆）");return false}
   const item={id:_poolId(),name:nm,q:nm,ts:Date.now(),date:getLocalDateStr(),by:me.uid};
+  if(geoPt){item.lat=geoPt[0];item.lng=geoPt[1]}
   const ar=String((o&&o.area)||"").trim().slice(0,20);if(ar)item.area=ar;
   const nt=String((o&&o.note)||"").trim().slice(0,200);if(nt)item.note=nt;
   const ad=String((o&&o.addr)||"").trim().slice(0,100);if(ad)item.addr=ad;

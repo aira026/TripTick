@@ -202,9 +202,9 @@ function buildForm() {
     const content = field("地點名稱", (() => {
       const i = document.createElement("input");
       i.type = "text";
-      i.placeholder = "例如 鯉魚潭";
+      i.placeholder = "例如 鯉魚潭，或貼 Google 地圖連結";
       i.autocomplete = "off";
-      i.maxLength = 60;
+      i.maxLength = 2000;
       return i;
     })());
     const area = field("區域（選填）", (() => {
@@ -737,8 +737,8 @@ function bindEvents() {
       if (nameEl) nameEl.focus();
       return;
     }
-    if (/^https?:\/\//i.test(data.content)) {
-      qaHint(nameEl, "貼連結收藏之後開放，請先輸入名稱");
+    if (editMode && editMode.kind === "place" && /^https?:\/\//i.test(data.content)) {
+      qaHint(nameEl, "編輯時請輸入名稱；要用連結請新增一筆");
       if (nameEl) nameEl.focus();
       return;
     }
