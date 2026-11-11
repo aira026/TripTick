@@ -784,6 +784,8 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="memonew"){window.openQuickAdd?.({type:"note"});return}
   if(a==="nowtab"){nowTab=v==="pool"?"pool":"daily";applyNowTab();return}
   if(a==="poolnew"){window.openQuickAdd?.({type:"place"});return}
+  if(a==="poolplan"&&t){poolPlanForm(t,v);return}
+  if(a==="poolplanok"&&t){poolPlanSave(t);return}
   if(a==="pooldel"&&t){QA_API.deletePoolPlace(t,v);return}
   if(a==="pooledit"&&t){const p=poolOf(t).find(x=>x&&x.id===v);if(!p){toast("找不到這筆");return}window.openQuickAdd?.({mode:"edit-place",id:p.id,name:p.name,area:p.area||"",note:p.note||"",addr:p.addr||"",must:!!p.must});return}
  if(a==="stormtab"){stormTab=v;$("#t-storm").innerHTML=bar()+stormHTML(T0());return}
@@ -1542,11 +1544,38 @@ function poolHTML(t){
   const star='<svg class="ix pt-star" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="#FF7A00" stroke="#FF7A00" stroke-width="1.75" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9 6.7 19.6l1-5.8L3.5 9.7l5.9-.9L12 3.5z"/></svg>';
   const xs='<svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   const row=p=>{const q=encodeURIComponent((p.q||p.name||"")+(t.country?" "+t.country:""));
-    return`<div class="pt-row"><div class="pt-main"><div class="pt-name">${p.must?star:""}<span>${esc(p.name)}</span></div>${p.note?`<p class="pt-note">${esc(p.note)}</p>`:""}${placed[p.id]?`<span class="pt-tag">已排 ${esc(placed[p.id])}</span>`:""}${p.lat==null?`<span class="pt-tag">未標到地圖</span>`:""}</div>${p.lat==null?`<a class="cb" href="https://maps.google.com/?q=${q}" target="_blank" rel="noopener">開啟地圖</a>`:""}<button class="x ed" data-a="pooledit" data-v="${esc(p.id)}" aria-label="編輯"><i class=i-edit></i></button><button class="x ed" data-a="pooldel" data-v="${esc(p.id)}" aria-label="刪除">${xs}</button></div>`};
+    return`<div class="pt-row"><div class="pt-main"><div class="pt-name">${p.must?star:""}<span>${esc(p.name)}</span></div>${p.note?`<p class="pt-note">${esc(p.note)}</p>`:""}${placed[p.id]?`<span class="pt-tag">已排 ${esc(placed[p.id])}</span>`:""}${p.lat==null?`<span class="pt-tag">未標到地圖</span>`:""}</div><button class="cb" data-a="poolplan" data-v="${esc(p.id)}">排入</button>${p.lat==null?`<a class="cb" href="https://maps.google.com/?q=${q}" target="_blank" rel="noopener">開啟地圖</a>`:""}<button class="x ed" data-a="pooledit" data-v="${esc(p.id)}" aria-label="編輯"><i class=i-edit></i></button><button class="x ed" data-a="pooldel" data-v="${esc(p.id)}" aria-label="刪除">${xs}</button></div>`};
   const head=g=>(g.k||groups.length>1)?`<div class="me-day">${esc(g.k||"未分區")}</div>`:"";
   return`<div class="pt-pool">${can?`<div class="pills pt-top">${addBtn}</div>`:""}${poolMapHTML(t)}${groups.map(g=>head(g)+g.items.slice().sort((a,b)=>(b.must?1:0)-(a.must?1:0)).map(row).join("")).join("")}</div>`
 }
 // ===== /口袋名單 =====
+function poolPlanForm(t,id){
+  if(!_poolGuard(t))return;
+  const p=poolOf(t).find(x=>x&&x.id===id);if(!p){toast("找不到這筆，可能已被刪除");return}
+  const D=getDays(t);
+  if(!D.length){toast("還沒有每日行程，請先到行程頁新增一天");return}
+  const di=Math.min(dayI[t.id]??0,D.length-1);
+  modal(`<h3>排入行程</h3><div class="fm" data-pid="${esc(p.id)}"><p><b>${esc(p.name)}</b></p><label>哪一天<select id="fp-day">${D.map((d,i)=>`<option value="${i}" ${i===di?"selected":""}>${esc((d.k||"D"+(i+1))+(d.date?"・"+d.date:"")+(d.city?"・"+d.city:""))}</option>`).join("")}</select></label><label>時間（選填）<input id="fp-t" placeholder="例如 09:30"></label><div class="pills"><button class="pill" data-a="poolplanok">排入</button></div></div>`)
+}
+function poolPlanSave(t){
+  if(!_poolGuard(t))return;
+  const f=document.querySelector(".fm"),pid=f&&f.dataset.pid,p=poolOf(t).find(x=>x&&x.id===pid);
+  if(!p){toast("找不到這筆，可能已被刪除");return}
+  const D=getDays(t),di=+$("#fp-day").value,day=D[di];
+  if(!day){toast("找不到這一天");return}
+  const tm=$("#fp-t").value.trim();
+  if(tm&&!isT(tm)){toast("時間請寫成 09:30 的格式，或留空");return}
+  const x={t:tm,h:p.name,d:p.note||"",q:p.q||p.name,more:"",pid:p.id};
+  if(p.lat!=null){x.lat=p.lat;x.lng=p.lng}
+  if(!Array.isArray(day.items))day.items=[];
+  let k=day.items.length;
+  if(isT(x.t)){const n=day.items.findIndex(y=>isT(y.t)&&y.t.padStart(5,"0")>x.t.padStart(5,"0"));if(n>=0)k=n}
+  day.items.splice(k,0,x);
+  setDays(t,D);
+  $("#modal").classList.remove("on");
+  render();
+  toast("已排入 "+(day.k||"D"+(di+1)))
+}
 // ===== 口袋名單地圖 =====
 const PoolMap={m:null,ll:[],sel:null,tok:0,
 render(t){try{if(this.m)this.m.remove()}catch(e){}this.m=null;const el=document.getElementById("poolmap");if(!el||typeof L==="undefined")return;
@@ -1556,7 +1585,7 @@ render(t){try{if(this.m)this.m.remove()}catch(e){}this.m=null;const el=document.
  this.sel=null;this.m.on("popupclose",()=>{this.sel=null});
  const ll=[];
  pts.forEach(p=>{const on=!!placed[p.id];ll.push([p.lat,p.lng]);
-  const d=document.createElement("div");d.style.cssText="font-size:13px;line-height:1.5;color:#3A2E26";const h=document.createElement("b");h.style.fontSize="16px";h.textContent=p.name;d.appendChild(h);const meta=[p.must?"必去":"",on?"已排 "+placed[p.id]:"",p.area||""].filter(Boolean).join("・");if(meta){const m=document.createElement("div");m.style.color="#7A6A5C";m.textContent=meta;d.appendChild(m)}if(p.note){const n=document.createElement("div");n.style.cssText="margin-top:4px;white-space:pre-wrap";n.textContent=p.note;d.appendChild(n)}const nv=document.createElement("a");nv.className="pill gl mini";nv.target="_blank";nv.rel="noopener";nv.textContent="導航";nv.style.cssText="display:inline-flex;align-items:center;justify-content:center;margin-top:8px;color:#3A2E26;text-decoration:none";nv.href="https://www.google.com/maps/dir/?api=1&destination="+p.lat+","+p.lng+"&travelmode=walking";d.appendChild(nv);
+  const d=document.createElement("div");d.style.cssText="font-size:13px;line-height:1.5;color:#3A2E26";const h=document.createElement("b");h.style.fontSize="16px";h.textContent=p.name;d.appendChild(h);const meta=[p.must?"必去":"",on?"已排 "+placed[p.id]:"",p.area||""].filter(Boolean).join("・");if(meta){const m=document.createElement("div");m.style.color="#7A6A5C";m.textContent=meta;d.appendChild(m)}if(p.note){const n=document.createElement("div");n.style.cssText="margin-top:4px;white-space:pre-wrap";n.textContent=p.note;d.appendChild(n)}const nv=document.createElement("a");nv.className="pill gl mini";nv.target="_blank";nv.rel="noopener";nv.textContent="導航";nv.style.cssText="display:inline-flex;align-items:center;justify-content:center;margin-top:8px;color:#3A2E26;text-decoration:none";nv.href="https://www.google.com/maps/dir/?api=1&destination="+p.lat+","+p.lng+"&travelmode=walking";d.appendChild(nv);const pb=document.createElement("button");pb.type="button";pb.className="pill gl mini";pb.textContent="排入";pb.style.cssText="display:inline-flex;align-items:center;justify-content:center;margin:8px 0 0 8px;color:#3A2E26";pb.addEventListener("click",()=>{const c=T0();if(c)poolPlanForm(c,p.id)});d.appendChild(pb);
   const mk=L.circleMarker([p.lat,p.lng],{radius:p.must?9:7,color:on?"#FFFFFF":"#FF7A00",weight:on?2:2.5,fillColor:"#FF7A00",fillOpacity:on?.9:0}).addTo(this.m);
   mk.on("click",e=>{L.DomEvent.stopPropagation(e);if(this.sel===p.id){this.reset();return}
    const tok=++this.tok,open=()=>{if(tok!==this.tok)return;L.popup({offset:[0,-4],maxWidth:240,autoPan:true,autoPanPadding:[20,20],closeOnClick:false}).setLatLng([p.lat,p.lng]).setContent(d).openOn(this.m);this.sel=p.id};
