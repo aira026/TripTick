@@ -191,7 +191,7 @@ function renderCurrent(t, el=$("#t-current")){
       <section class="trip-info-header">
         <h2><a href="#" class="trip-title-link" data-a="gotnow">${esc(t.title)}</a></h2>
         <p>${dateLabel}</p>
-        <div class="current-time"><span class="day-badge">D${dayNum}</span> 現在時間 ${nowTime} ・ ${dateStr}</div>
+        
       </section>
       <div class="trip-carousel">${cards}</div>
       ${pagRow}
