@@ -950,3 +950,7 @@ body:not(.editing) #live:has(.lvoff){display:none}
 .drawer button.on small{color:#7A6A5C}
 .drawer button.sub.on{background:rgba(255,250,242,.92);color:#3A2E26;border:1px solid rgba(58,46,38,.14);border-left:3px solid #FF7A00}
 .drawer button.login{background:#fff;color:#3A2E26;border:1px solid rgba(58,46,38,.14);justify-content:center}
+
+/* ===== patch-css: 第3批去黑底（.chip／.bar／.lang／.ftag） ===== */
+.chip,.ftag{background:rgba(255,250,242,.92);color:#3A2E26;border:1px solid rgba(58,46,38,.14)}
+.bar button.on,.lang button.on{background:#fff;color:#3A2E26;font-weight:700;box-shadow:var(--sh)}
