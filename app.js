@@ -23,7 +23,7 @@ const $=s=>document.querySelector(s);
 const esc=x=>String(x??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const flag=cc=>String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397+c.charCodeAt()));
 const fmt=(n,c)=>`${c} ${Math.round(n).toLocaleString()}`;
-let DATA=[],user="shared",unlocked=false,zm=null;const dayI={};
+let DATA=[],user="shared",unlocked=false,zm=null;const dayI={};let VIEW_ID=null,NOWOPEN=false,RV=null;
 const store=(k,v)=>{try{v==null?localStorage.getItem(k):localStorage.setItem(k,v)}catch(e){}};
 const load=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),1600)}
@@ -131,8 +131,10 @@ function packHTML(t){const P=plist(t),sec=(k,ti)=>`<h2 class="sec">${ti}</h2><di
  return sec("pack","冬季裝備")+sec("gift","伴手禮／想買")}
 function calc(){const v=parseFloat($("#jpy")?.value)||0,r=parseFloat($("#rate")?.value)||0;if(!$("#twd"))return;if(r)store("tp-rate-"+curOf(),r);$("#twd").textContent="NT$ "+Math.round(v*r).toLocaleString();
  $("#qk").innerHTML=[1000,5000,10000,20000].map(x=>`<button data-a="q" data-v="${x}"><small>${x.toLocaleString()}</small>NT$${Math.round(x*r).toLocaleString()}</button>`).join("")}
-function renderNow(t){const ids=["now","tix","storm","yen","pack"],emp=emptyNow();
- const f={now:t=>bar(1)+nowCard(t),tix:t=>bar()+tixHTML(t),storm:t=>bar()+stormHTML(t),yen:t=>bar()+yenHTML(t),pack:t=>bar()+packHTML(t)};ids.forEach(i=>{$("#t-"+i).innerHTML=t?f[i](t):emp});calc();if(t){MiniMap.render("nowmap",ptsOf(t),pickPt);try{PoolMap.render(t)}catch(e){}try{buildFood(t)}catch(e){}}}
+function renderNow(t){const ids=["now","tix","storm","yen","pack"],emp=emptyNow(),vt=viewTrip();
+ const f={tix:t=>bar()+tixHTML(t),storm:t=>bar()+stormHTML(t),yen:t=>bar()+yenHTML(t),pack:t=>bar()+packHTML(t)};
+ ids.forEach(i=>{$("#t-"+i).innerHTML=i==="now"?(vt?bar(1,vt)+nowCard(vt):nowEmpty()):(t?f[i](t):emp)});
+ calc();if(vt){MiniMap.render("nowmap",ptsOf(vt),pickPt);try{PoolMap.render(vt)}catch(e){}}if(t){try{buildFood(t)}catch(e){}}}
 
 /* 當前行程：旅行當下專用頁 */
 let CUR_TRIP=null,CUR_REAL=-1,CUR_EL=null;
@@ -255,31 +257,33 @@ const sosRow=x=>`<div class="sosr"><input class="fi sosl" value="${esc(x[0])}" p
 const sosHTML=t=>{const ed=document.body.classList.contains("editing")&&!!me,L=sosList(t);
  if(ed)return`<h3>緊急聯絡／保險</h3><div id="sosrows">${L.map(sosRow).join("")}</div><div class="pills"><button class="pill gl" data-a="sosadd">＋ 新增一列</button><button class="pill" data-a="savesos">儲存</button></div><p class="meta" style="margin-top:8px">電話請填數字，會自動變成可撥打連結。</p>`;
  return`<h3>緊急聯絡／保險</h3>${L.map(x=>`<div class="row"><span>${esc(x[0])}</span>${x[1]?(x[2]?`<a class="cb" href="${esc(x[2])}">${esc(x[1])}</a>`:`<b>${esc(x[1])}</b>`):'<span class="meta">尚未填寫</span>'}</div>`).join("")}<p class="meta" style="margin-top:8px">開啟編輯模式後再打開此視窗，即可修改。</p>`};
-const itm=(x,di,ii)=>`<div class="it ${x.type||""}"><div class="tm">${esc(x.t)}</div><div class="bd">${dietWarn(x,T0())}<b>${esc(x.h)}</b>${x.type==="crit"?'<em class="tag">重要班次</em>':x.type==="stay"?'<em class="tag stay">住宿</em>':""}${x.d?`<p>${esc(x.d)}</p>`:""}${dietTags(x)}${x.q&&x.lat==null?`<a class="cb" href="https://maps.google.com/?q=${encodeURIComponent(x.q)}" target="_blank" rel="noopener">開啟地圖</a>`:""}${x.more?`<details><summary>備案／說明</summary><p>${esc(x.more)}</p></details>`:""}</div><div class="act ed"><button class="cb" data-a="edititem" data-v="${di}:${ii}" aria-label="編輯"><i class=i-edit></i></button><button class="cb" data-a="delitem" data-v="${di}:${ii}" aria-label="刪除"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>`;
+const itm=(x,di,ii)=>`<div class="it ${x.type||""}"><div class="tm">${esc(x.t)}</div><div class="bd">${dietWarn(x,TV())}<b>${esc(x.h)}</b>${x.type==="crit"?'<em class="tag">重要班次</em>':x.type==="stay"?'<em class="tag stay">住宿</em>':""}${x.d?`<p>${esc(x.d)}</p>`:""}${dietTags(x)}${x.q&&x.lat==null?`<a class="cb" href="https://maps.google.com/?q=${encodeURIComponent(x.q)}" target="_blank" rel="noopener">開啟地圖</a>`:""}${x.more?`<details><summary>備案／說明</summary><p>${esc(x.more)}</p></details>`:""}</div><div class="act ed"><button class="cb" data-a="edititem" data-v="${di}:${ii}" aria-label="編輯"><i class=i-edit></i></button><button class="cb" data-a="delitem" data-v="${di}:${ii}" aria-label="刪除"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>`;
 const tabsHTML=(t,di)=>getDays(t).map((d,i)=>`<button class="${i===di?"on":""}" data-a="day" data-v="${i}">${esc(d.k)}</button>`).join("")+'<button class="plus ed" data-a="addday" aria-label="新增一天">＋</button>';
 const dayHTML=(t,i)=>{const d=getDays(t)[i];if(!d)return'<div class="glass blk"><p class="meta">還沒有每日行程。開啟「編輯模式」後，按上方「＋」新增第一天。</p></div>';
  return`<div class="dh"><h3>${esc(d.city||d.k)}</h3><p>${d.city?esc(d.k)+"・":""}${esc(d.date||"")}${d.wx||d.tp?` <span class="wxchip">${esc(d.wx||"")} ${esc(d.tp||"")}</span>`:""}</p>${d.pos?`<p class="dpos">${esc(d.pos)}</p>`:""}</div>${d.items.map((x,j)=>itm(x,i,j)).join("")||'<p class="meta" style="margin:8px 4px">這天還沒有行程項目。</p>'}${dayMore(d,i)}<div class="pills ed"><button class="pill" data-a="additem" data-v="${i}">＋ 新增景點／行程</button><button class="pill gl" data-a="editday" data-v="${i}">編輯本日</button><button class="pill gl" data-a="delday" data-v="${i}">刪除本日</button></div>`};
 function todayIdx(t){const n=new Date(),s=new Date((t.startDate||"")+"T00:00"),k=Math.floor((n-s)/864e5);return k>=0&&k<getDays(t).length?k:0}
 let dailyMapOpen=false;
-function nowCard(t){const D=getDays(t),hsp=t.hotspots&&t.mapImage,di=Math.min(dayI[t.id]??todayIdx(t),Math.max(0,D.length-1)),n=nd(t);dayI[t.id]=di;
- return`<article class="glass dark hero"><small>${flagOf(t)} 當前行程</small><h2>${esc(t.title)}</h2><p>${esc(t.startDate||"日期未定")}${t.endDate?" – "+esc(t.endDate.slice(5)):""}・${n} 天${(t.members||[]).length>1?`・${t.members.length} 人共編`:""}</p>${t.notes?`<p>${esc(t.notes)}</p>`:""}<div class="cdp" id="cd"></div></article>
- <div id="live" class="glass blk live">${liveHTML(t)}</div>
- 
- ${poolSeg()}<div class="pt-daily${dailyMapOpen?" dmap-on":""}" id="ptdaily"><div class="days" id="dtabs">${tabsHTML(t,di)}</div><div id="dayblk">${daysAcc(t,di)}</div>
- <div class="dtools"><button class="pill gl mini2" data-a="dmaptoggle" id="dmapbtn">${dailyMapOpen?"收合地圖":"顯示地圖"}</button><div class="locbar" id="locbar">${locBarHTML(t)}</div></div><div class="glass mapbox dmapbox"><div id="nowmap" class="nowmap" role="application" aria-label="當前行程地圖"></div></div>${dailyMissingHTML(t)}</div>${poolHTML(t)}`}
+function nowCard(t){const D=getDays(t),di=Math.min(dayI[t.id]??todayIdx(t),Math.max(0,D.length-1)),n=nd(t),many=tripList().length>1;dayI[t.id]=di;RV=t;
+ try{return`<div class="nowrow"><article class="nowcard glass${NOWOPEN?" is-open":""}" id="nowcard" data-tid="${esc(t.id)}"><span class="nc-rip" aria-hidden="true"></span>
+ <div id="live" class="nc-top" data-a="nowopen">${liveHTML(t)}</div>
+ <div class="nc-more" id="ncmore"${NOWOPEN?"":" inert"}><div class="nc-in"><div class="nc-pad">
+ <div class="nc-id"><small>${flagOf(t)}${t.country?" "+esc(t.country):""}</small><h2>${esc(t.title)}</h2><p>${esc(t.startDate||"日期未定")}${t.endDate?" – "+esc(t.endDate.slice(5)):""}・${n} 天${(t.members||[]).length>1?`・${t.members.length} 人共編`:""}</p>${t.notes?`<p>${esc(t.notes)}</p>`:""}<div class="cdp" id="cd"></div></div>
+ <div class="pt-daily${dailyMapOpen?" dmap-on":""}" id="ptdaily"><div class="days" id="dtabs">${tabsHTML(t,di)}</div><div id="dayblk">${daysAcc(t,di)}</div>
+ <div class="dtools"><button class="pill gl mini2" data-a="dmaptoggle" id="dmapbtn">${dailyMapOpen?"收合地圖":"顯示地圖"}</button><div class="locbar" id="locbar">${locBarHTML(t)}</div></div><div class="glass mapbox dmapbox"><div id="nowmap" class="nowmap" role="application" aria-label="行程地圖"></div></div>${dailyMissingHTML(t)}</div>
+ </div></div></div><button type="button" class="page-btn pg-auto nc-sw" data-a="tripnext" aria-label="切換行程（目前：${esc(t.title)}）"${many?"":" disabled"}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button></article></div>${poolSeg()}${poolHTML(t)}`}finally{RV=null}}
 function ptsOf(t){const P=[];getDays(t).forEach((d,i)=>d.items.forEach(x=>{if(x.lat!=null)P.push({lat:x.lat,lng:x.lng,day:i,dayLabel:`${d.k} ${d.date||""}`.trim(),time:x.t||"",title:x.h,place:x.q||"",note:x.d||""})}));if(!P.length)(t.spots||[]).forEach(s=>P.push({lat:s.lat,lng:s.lng,day:(s.day||1)-1,dayLabel:s.day?"D"+s.day:"",time:"",title:s.name,place:"",note:s.note||""}));return P}
 function refreshDays(t){const D=getDays(t),di=Math.min(dayI[t.id]??0,Math.max(0,D.length-1));dayI[t.id]=di;$("#dtabs").innerHTML=tabsHTML(t,di);$("#dayblk").innerHTML=daysAcc(t,di);MiniMap.render("nowmap",ptsOf(t),pickPt)}
-async function saveItem(){const t=T0(),f=document.querySelector(".fm"),di=+f.dataset.di,ii=f.dataset.ii===""?null:+f.dataset.ii,v=i=>$("#fi-"+i).value.trim(),h=v("h");if(!h)return toast("請填寫標題");
+async function saveItem(){const t=TV(),f=document.querySelector(".fm"),di=+f.dataset.di,ii=f.dataset.ii===""?null:+f.dataset.ii,v=i=>$("#fi-"+i).value.trim(),h=v("h");if(!h)return toast("請填寫標題");
  const D=getDays(t),day=D[di],old=ii!=null?day.items[ii]:{},x={...old,t:v("t"),h,d:v("d"),q:v("q"),more:v("m")};{const ty=v("type");if(ty)x.type=ty;else delete x.type}{const dg=[...document.querySelectorAll(".rtg:checked")].map(e=>e.value);if(dg.length)x.diet=dg;else delete x.diet}
  if(x.q&&(x.q!==old.q||x.lat==null)){toast("查詢座標中…");const g=await geo(x.q+(t.country?" "+t.country:""));if(g){x.lat=g[0];x.lng=g[1]}else{delete x.lat;delete x.lng;toast("找不到座標，地圖不會標記")}}
  if(!x.q){delete x.lat;delete x.lng}
  if(ii!=null)day.items[ii]=x;else{let k=day.items.length;if(isT(x.t)){const n=day.items.findIndex(y=>isT(y.t)&&y.t.padStart(5,"0")>x.t.padStart(5,"0"));if(n>=0)k=n}day.items.splice(k,0,x)}
  setDays(t,D);$("#modal").classList.remove("on");refreshDays(t)}
-function itemForm(di,ii){const t=T0(),x=ii!=null?getDays(t)[di].items[ii]:{};
+function itemForm(di,ii){const t=TV(),x=ii!=null?getDays(t)[di].items[ii]:{};
  modal(`<h3>${ii!=null?"編輯項目":"新增景點／行程"}</h3><div class="fm" data-di="${di}" data-ii="${ii??""}"><label>時間<input id="fi-t" value="${esc(x.t)}" placeholder="例如 09:30（可留空或寫「下午」）"></label><label>標題<input id="fi-h" value="${esc(x.h)}" placeholder="例如 美瑛青池"></label><label>類型<select id="fi-type"><option value="">一般</option><option value="stay" ${x.type==="stay"?"selected":""}>住宿</option><option value="crit" ${x.type==="crit"?"selected":""}>重要班次</option>${x.type&&x.type!=="stay"&&x.type!=="crit"?`<option value="${esc(x.type)}" selected>${esc(x.type)}</option>`:""}</select></label><label>備註<textarea id="fi-d" rows="3">${esc(x.d)}</textarea></label><label>備案／說明（點開行程卡片才會看到）<textarea id="fi-m" rows="3">${esc(x.more)}</textarea></label><label>地點（地圖標記與導航用，可留空）<input id="fi-q" value="${esc(x.q)}" placeholder="例如 青池 美瑛"></label><div class="splits dietrow"><small class="meta">餐廳飲食屬性（選填；也會自動從名稱與備註推測）</small>${RT.map(([c,n])=>`<label class="chk"><input type="checkbox" class="rtg" value="${c}" ${(x.diet||[]).includes(c)?"checked":""}> ${n}</label>`).join("")}</div><div class="pills"><button class="pill" data-a="saveitem">儲存</button></div></div>`)}
-function dayForm(i){const t=T0(),d=i!=null?getDays(t)[i]:{};
+function dayForm(i){const t=TV(),d=i!=null?getDays(t)[i]:{};
  modal(`<h3>${i!=null?"編輯本日":"新增一天"}</h3><div class="fm" data-i="${i??""}"><label>城市／主題<input id="fd-c" value="${esc(d.city)}" placeholder="例如 皇后鎮"></label><label>日期（留空會依出發日自動帶入）<input id="fd-date" value="${esc(d.date)}" placeholder="例如 3/12（四）"></label><label>當天重點<input id="fd-p" value="${esc(d.pos)}"></label><label>當日備案／說明<textarea id="fd-m" rows="3">${esc(d.more)}</textarea></label><div class="pills"><button class="pill" data-a="saveday">儲存</button></div></div>`)}
-function saveDay(){const t=T0(),f=document.querySelector(".fm"),i=f.dataset.i===""?null:+f.dataset.i,D=getDays(t),c=$("#fd-c").value.trim(),p=$("#fd-p").value.trim();let date=$("#fd-date").value.trim();
+function saveDay(){const t=TV(),f=document.querySelector(".fm"),i=f.dataset.i===""?null:+f.dataset.i,D=getDays(t),c=$("#fd-c").value.trim(),p=$("#fd-p").value.trim();let date=$("#fd-date").value.trim();
  if(i!=null){D[i].city=c;D[i].pos=p;D[i].more=$("#fd-m").value.trim();D[i].date=date}
  else{const n=D.length;if(!date&&/^\d{4}-\d{2}-\d{2}/.test(t.startDate||"")){const x=new Date(t.startDate+"T00:00");x.setDate(x.getDate()+n);date=`${x.getMonth()+1}/${x.getDate()}（${"日一二三四五六"[x.getDay()]}）`}D.push({k:"D"+(n+1),date,city:c,wx:"",tp:"",pos:p,more:$("#fd-m").value.trim(),items:[]});dayI[t.id]=n}
  setDays(t,D);$("#modal").classList.remove("on");refreshDays(t)}
@@ -727,7 +731,7 @@ function render(){const v=visible(),by=s=>v.filter(t=>t.status===s);zm=null;
  MapView.render(v);if(cur==="map")MapView.refresh();
  const emp='<p class="empty">還沒有旅程，點上方「＋ 新增旅程」開始記錄</p>';
  $("#l-past").innerHTML=pastOrder(by("past")).map(tcard).join("")||emp;$("#l-future").innerHTML=by("future").map(tcard).join("")||emp;photoGC();pastInit();renderDrawer();updBar();tick();syncLoc()}
-function tick(){const el=$("#cd"),t=visible().find(x=>x.status==="now"&&!x.locked);if(!el||!t||!t.startDate)return;const now=new Date(),st=new Date(t.startDate+"T00:00");
+function tick(){const el=$("#cd"),t=viewTrip();if(!el||!t||!t.startDate)return;const now=new Date(),st=new Date(t.startDate+"T00:00");
  const al=t.alerts||[];if(now>=st&&!al.length){const dd=Math.floor((now-st)/864e5)+1;el.textContent=dd<=nd(t)?`旅程第 ${dd} 天`:"旅程結束";return}
  if(now<st){el.textContent=`出發倒數 ${Math.ceil((st-now)/864e5)} 天`;return}
  const nx=al.find(a=>new Date(a[0])>now);if(!nx){el.textContent="旅程結束";return}
@@ -737,7 +741,7 @@ function tick(){const el=$("#cd"),t=visible().find(x=>x.status==="now"&&!x.locke
 document.addEventListener("change",e=>{const f=e.target;if(!f||f.tagName!=="INPUT"||f.type!=="file"||!f.files||!f.files.length)return;const id=f.dataset.ph;if(id)addPhotos(id,f.files);f.value=""});
 
 document.addEventListener("click",e=>{const b=e.target.closest("[data-a],[data-t]");if(!b)return;
- const t=visible().find(x=>x.status==="now"&&!x.locked),a=b.dataset.a,v=b.dataset.v;
+ const t=TV(),a=b.dataset.a,v=b.dataset.v;
  if(b.dataset.t){go(b.dataset.t);return}
 if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="menu"){document.body.classList.toggle("dr");return}
@@ -761,8 +765,8 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
 
  if(a==="home"){e.preventDefault();go("current");return}
  if(a==="gotnow"){e.preventDefault();go("now");return}
- if(a==="archive"&&t){if(confirm(`將「${t.title}」結束並歸檔到歷史旅程？`)){setSt(t,"past").then(()=>{go("past");toast("已歸檔")})}return}
- if(a==="setcur"){const n=visible().find(x=>x.id===v),o=visible().filter(x=>x.status==="now"&&x.id!==v);if(n&&confirm(`將「${n.title}」${n.status==="past"?"重新":""}設為當前行程？${o.length?"\n原本的當前旅程會自動歸檔到歷史旅程。":""}`)){Promise.all([...o.map(x=>setSt(x,"past")),setSt(n,"now")]).then(()=>{go("now");toast("已設為當前行程")})}return}
+ if(a==="archive"&&t){if(confirm(`將「${t.title}」結束並歸檔到歷史旅程？`)){setSt(t,"past").then(()=>{VIEW_ID=null;go("past");toast("已歸檔")})}return}
+ if(a==="setcur"){const n=visible().find(x=>x.id===v),o=visible().filter(x=>x.status==="now"&&x.id!==v);if(n&&confirm(`將「${n.title}」${n.status==="past"?"重新":""}設為當前行程？${o.length?"\n原本的當前旅程會自動歸檔到歷史旅程。":""}`)){Promise.all([...o.map(x=>setSt(x,"past")),setSt(n,"now")]).then(()=>{VIEW_ID=null;go("now");toast("已設為當前行程")})}return}
  if(a==="addbk"&&t){const i=$("#in-bk"),x=i.value.trim();if(!x)return;const L=bkList(t);L.push({n:x,c:"",u:""});saveBk(t,L);$("#t-tix").innerHTML=bar()+tixHTML(t);return}
  if(a==="delbk"&&t){const L=bkList(t);L.splice(+v,1);saveBk(t,L);$("#t-tix").innerHTML=bar()+tixHTML(t);return}
  if(a==="cpi"){const c=document.querySelector(`[data-b="c"][data-i="${v}"]`).value;c?copy(c):toast("尚未填寫編號");return}
@@ -777,7 +781,7 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="saveitem"&&t){saveItem();return}
  if(a==="saveday"&&t){saveDay();return}
 
- if(a==="edtoggle"){setEdit(!document.body.classList.contains("editing"));return}
+ if(a==="edtoggle"){const was=document.body.classList.contains("editing");setEdit(!was);if(!was&&cur==="now"&&$("#nowcard")&&$("#live")&&!NOWOPEN)nowToggle();return}
  if(a==="memoadd"&&t){memoForm(v,null);return}
  if(a==="memoedit"&&t){const[k,i]=v.split(":");memoForm(k,+i);return}
  if(a==="memodel"&&t){const[k,i]=v.split(":"),M=memoOf(t);M[k].splice(+i,1);saveMemo(t,M);$("#t-storm").innerHTML=bar()+stormHTML(t);return}
@@ -800,7 +804,7 @@ if(a==="medel"&&t){QA_API.deleteMemoEntry(t,v);return}
  if(a==="leave"&&t){if(!confirm("確定離開這趟行程？你將無法再查看。"))return;updateDoc(tdoc(t),{members:arrayRemove(me.uid),["st."+me.uid]:deleteField()}).then(()=>{$("#modal").classList.remove("on");go("now");toast("已離開行程")}).catch(er=>toast("失敗："+(er.code||er.message)));return}
  if(a==="resetinv"&&t){if(confirm("重設後舊邀請碼立刻失效（已在行程裡的人不受影響）。要重設嗎？"))resetInvite(t).then(ok=>{if(ok)membersModal(t)});return}
  if(a==="cpinv"){copy(v,"已複製邀請碼");return}
- if(a==="tplreset"&&t){if(TPL&&confirm("將每日行程與地圖標點重設為最新範例？你在每日行程上的修改會被覆蓋。"))patch(t,{days:TPL.days,spots:TPL.spots}).then(()=>{refreshDays(T0());toast("已重設為最新範例")});return}
+ if(a==="tplreset"&&t&&TPL&&t.templateId===TPL.id){if(confirm("將每日行程與地圖標點重設為最新範例？你在每日行程上的修改會被覆蓋。"))patch(t,{days:TPL.days,spots:TPL.spots}).then(()=>{refreshDays(TV());toast("已重設為最新範例")});return}
  if(a==="fixold"&&t){const c=cfg(t);modal(`<h3>整理舊帳目</h3><p class="meta">這些名稱不是目前的成員。請選擇每個名稱要歸給哪位成員，套用後帳本與結算會自動更新。</p><div class="fm">${c.orphans.map(o=>`<label>${esc(lbl(t,o))}<select class="fi" data-orph="${esc(o)}"><option value="">（暫不處理）</option>${c.members.map(m=>`<option value="${esc(m)}">${esc(nameOf(t,m))}</option>`).join("")}</select></label>`).join("")}<div class="pills"><button class="pill" data-a="fixapply">套用</button></div></div>`);return}
  if(a==="fixapply"&&t){const map={};document.querySelectorAll("[data-orph]").forEach(x=>{if(x.value)map[x.dataset.orph]=x.value});const L=exList(t).map(e=>({...e,paidBy:map[e.paidBy]||e.paidBy,splitWith:[...new Set((e.splitWith||[]).map(k=>map[k]||k))]}));saveEx(t,L);$("#modal").classList.remove("on");$("#t-yen").innerHTML=bar()+yenHTML(t);calc();toast("已整理舊帳目");return}
  if(a==="nav"){return}
@@ -814,9 +818,11 @@ if(a==="medel"&&t){QA_API.deleteMemoEntry(t,v);return}
  if(a==="savediet"&&t){saveDiet(t);return}
  if(a==="goyen"){go("yen");return}
  if(a==="accday"){const sec=document.getElementById("dacc-"+v);if(sec){const o=sec.classList.toggle("open");b.setAttribute("aria-expanded",o)}return}
- if(a==="print"){document.body.classList.remove("dr");go("now");{const t0=T0();if(t0&&$("#dayblk"))$("#dayblk").innerHTML=getDays(t0).map((_,n)=>dayHTML(t0,n)).join("")}setTimeout(()=>{try{MiniMap.refresh()}catch(e){}setTimeout(()=>window.print(),350)},150);return}
+ if(a==="print"){document.body.classList.remove("dr");go("now");{const t0=TV();if(t0&&$("#dayblk"))$("#dayblk").innerHTML=getDays(t0).map((_,n)=>dayHTML(t0,n)).join("")}setTimeout(()=>{try{MiniMap.refresh()}catch(e){}setTimeout(()=>window.print(),350)},150);return}
  if(a==="cprev"||a==="cnext"||a==="creset"){curStep(a);return}
- if(a==="lvnext"||a==="lvprev"||a==="lvauto"){liveStep(a);return}
+ if(a==="nowopen"){if(b.id==="live"&&e.target.closest("a"))return;nowToggle();return}
+  if(a==="tripnext"){tripNext();return}
+  if(a==="lvnext"||a==="lvprev"||a==="lvauto"){liveStep(a);return}
  if(a==="sosadd"){$("#sosrows").insertAdjacentHTML("beforeend",sosRow(["","",""]));return}
  if(a==="sosdel"){b.closest(".sosr").remove();return}
  if(a==="savesos"&&t){const arr=[...document.querySelectorAll(".sosr")].map(r=>{const l=r.querySelector(".sosl").value.trim(),x=r.querySelector(".sosv").value.trim();return[l,x,/^\+?[\d\s\-()]{3,}$/.test(x)?"tel:"+x.replace(/[^\d+]/g,""):""]}).filter(r=>r[0]||r[1]);patch(t,{sos:arr}).then(()=>{modal(sosHTML(t));toast("已儲存")});return}
@@ -955,7 +961,7 @@ async function membersModal(t){const code=await ensureInvite(t),mine=me.uid===t.
  <h4 class="meta" style="margin:16px 0 4px">邀請朋友加入</h4><div class="jp codebox"><span>${esc(code||"—")}</span><button class="pill" data-a="cpinv" data-v="${esc(code||"")}">複製</button></div>
  <p class="meta">把邀請碼傳給親友，他們登入後從選單「輸入邀請碼」輸入就能加入。</p><div class="pills">${mine?'<button class="pill gl" data-a="resetinv">重設邀請碼</button>':'<button class="pill gl" data-a="leave">離開此行程</button>'}</div>`)}
 async function resetInvite(t){for(let i=0;i<3;i++){const c=rnd(6);try{await setDoc(doc(db,"invites",c),{tripId:t.id,owner:me.uid});await updateDoc(tdoc(t),{inviteCode:c});t.inviteCode=c;toast("已重設，舊邀請碼失效");return true}catch(e){}}toast("重設失敗");return false}
-function pickPt(p){const t=T0();if(!t)return null;const d=getDays(t)[p.day]||{},k=d.k||"",hot=(t.hotspots||[]).find(h=>h.name===p.title),tag=(hot&&hot.note)||p.note||"",meta=[d.date,d.city].filter(Boolean).join(" ")+((d.wx||d.tp)?"・"+[d.wx,d.tp].filter(Boolean).join(" "):"");
+function pickPt(p){const t=TV();if(!t)return null;const d=getDays(t)[p.day]||{},k=d.k||"",hot=(t.hotspots||[]).find(h=>h.name===p.title),tag=(hot&&hot.note)||p.note||"",meta=[d.date,d.city].filter(Boolean).join(" ")+((d.wx||d.tp)?"・"+[d.wx,d.tp].filter(Boolean).join(" "):"");
  const el=document.createElement("div");el.className="pp";const other=p.day!==(dayI[t.id]??0);
  el.innerHTML=`<div class="mit"><b>${esc(p.title)}</b>${k&&other?`<span class="chip">${esc(k)}</span>`:""}</div>${tag?`<p class="ptag">${esc(tag)}</p>`:""}${p.time?`<p>${esc(p.time)}</p>`:""}${meta&&other?`<p class="mis">${esc(meta)}</p>`:""}<div class="pills">${k&&other?`<button class="pill gl" data-ppday="${p.day}">看 ${esc(k)} 行程</button>`:""}<a class="pill gl" href="https://maps.google.com/?q=${p.lat},${p.lng}" target="_blank" rel="noopener">地圖</a></div>`;
  const b=el.querySelector("[data-ppday]");if(b)b.addEventListener("click",()=>focusDay(t,p.day,true));
@@ -1025,7 +1031,7 @@ function dietWarn(x,t){if(!t||!t.diets||!Object.keys(t.diets).length||!isRest(x)
 
 /* 每日結尾「備案／說明」：檢視模式顯示摺疊，編輯模式為可編輯 Textarea（離開輸入框自動儲存） */
 const dayMore=(d,i)=>`${d.more?`<details class="vw daymorev"><summary>當日備案／說明</summary><p>${esc(d.more)}</p></details>`:""}<div class="ed daymoree"><small class="meta">當日備案／說明（離開輸入框自動儲存）</small><textarea class="fi daymore" data-di="${i}" rows="3" placeholder="例如：下雨時改去室內景點…">${esc(d.more||"")}</textarea></div>`;
-document.addEventListener("change",e=>{const el=e.target.closest(".daymore");if(!el)return;const t=T0();if(!t)return;const D=getDays(t),di=+el.dataset.di;if(!D[di])return;D[di].more=el.value.trim();setDays(t,D);toast("已儲存當日說明")});
+document.addEventListener("change",e=>{const el=e.target.closest(".daymore");if(!el)return;const t=TV();if(!t)return;const D=getDays(t),di=+el.dataset.di;if(!D[di])return;D[di].more=el.value.trim();setDays(t,D);toast("已儲存當日說明")});
 
 /* ===== 離線優先：本機快照 ===== */
 function saveSnap(u){SNAP={uid:u.uid,name:u.displayName,ts:Date.now()};try{localStorage.setItem("tp-snap",JSON.stringify({...SNAP,trips:TRIPS}))}catch(e){console.warn("[offline] 快照寫入失敗（儲存空間不足？）",e)}}
@@ -1042,25 +1048,48 @@ function liveCalc(t){const D=getDays(t);if(!D.length)return null;let d,i,off=fal
   else{d=k;const n=new Date(),cur=n.getHours()*60+n.getMinutes();i=-1;D[d].items.forEach((x,j)=>{if(isT(x.t)){const[h,m]=x.t.split(":");if(+h*60+ +m<=cur)i=j}})}}
  const its=D[d].items;return{D,d,i,off,before,left,day:D[d],now:its[i]||null,next:its[i+1]||null}}
 const mins=x=>{const[h,m]=x.t.split(":");return+h*60+ +m};
-function liveHTML(t){const c=liveCalc(t);if(!c)return'<div class="lvh"><span class="ldot"></span><b>現在 / 下一步</b></div><p class="meta">新增每日行程後，這裡會顯示現在與下一步。</p>';
- if(c.off)return`<div class="lvoff ed"><span class="meta">非行程時段</span><button class="pill gl mini2" data-a="lvnext">預覽行程</button></div>`;
+function liveHTML(t){const c=liveCalc(t),hd=(dot,ttl,meta,r)=>`<button type="button" class="nc-hd" data-a="nowopen" aria-expanded="${NOWOPEN}" aria-controls="ncmore"><span class="ldot ${dot}" aria-hidden="true"></span><b class="nc-t${r?" r":""}">${ttl}</b>${meta?`<span class="nc-d">${meta}</span>`:""}</button>`;
+ if(!c)return hd("","現在 / 下一步","")+'<p class="nc-note">新增每日行程後，這裡會顯示現在與下一步。</p>';
+ if(c.off){const go='<div class="nc-ctl"><button type="button" class="nc-btn" data-a="lvnext">預覽行程</button></div>';
+  if(c.before)return hd("","尚未開始",t.startDate?esc(t.startDate.slice(5).replace("-","/"))+" 出發":"")+(c.left?`<div class="lvrow"><small>出發倒數</small><b class="nc-big">${c.left} 天</b></div>`:'<p class="nc-note">出發日期未定。旅行期間會依手機時間自動標示現在與下一步。</p>')+go;
+  return hd("","非行程時段","",true)+'<p class="nc-note">旅程已結束。旅行期間會依手機時間自動標示現在與下一步。</p>'+go}
  const {now,next,day}=c,stay=now&&next&&isT(now.t)&&isT(next.t)&&mins(next)>mins(now)?mins(next)-mins(now):0,
  st=stay?`預估停留 ${stay>=60?Math.floor(stay/60)+" 小時 ":""}${stay%60?stay%60+" 分":""}`:"",
  dest=next?(next.lat!=null?`${next.lat},${next.lng}`:encodeURIComponent((next.q||next.h)+(t.country?" "+t.country:""))):"";
- return`<div class="lvh"><span class="ldot ${LIVE.sim?"sim":"on"}"></span><b>${LIVE.sim?"預覽模式":"現在 / 下一步"}</b><span class="meta">${esc(day.k)}${day.date?" "+esc(day.date):""}</span></div>
+ return hd(LIVE.sim?"sim":"on",LIVE.sim?"預覽模式":"現在 / 下一步",`${esc(day.k)}${day.date?" "+esc(day.date):""}`)+`
  <div class="lvrow"><small>現在</small><b>${now?esc((now.t?now.t+"　":"")+now.h):"尚未開始"}</b></div>
  <div class="lvrow nx"><small>下一步</small><b>${next?esc((next.t?next.t+"　":"")+next.h):"結束當天行程"}</b>${st?`<span class="lvst">${st}</span>`:""}</div>
  ${next?`<a class="pill lvnav" href="https://www.google.com/maps/dir/?api=1&destination=${dest}" target="_blank" rel="noopener"><i class="ic ic-nav"></i>導航至下一站</a>`:""}
- <div class="lvctl"><button data-a="lvprev">上一個</button><button data-a="lvnext">下一個</button><button data-a="lvauto" ${LIVE.sim?"":"disabled"}>回到即時</button></div>`}
-function refreshLive(){const el=$("#live"),t=T0();if(el&&t)el.innerHTML=liveHTML(t);if(t&&cur==="current")renderCurrent(t)}
-function liveStep(a){const t=T0();if(!t)return;if(a==="lvauto"){LIVE={sim:false,d:0,i:-1};return refreshLive()}
+ <div class="nc-ctl"><button type="button" class="nc-btn" data-a="lvprev">上一個</button><button type="button" class="nc-btn" data-a="lvnext">下一個</button><button type="button" class="nc-btn" data-a="lvauto" ${LIVE.sim?"":"disabled"}>回到即時</button></div>`}
+function refreshLive(){const el=$("#live"),t=viewTrip(),card=$("#nowcard");if(card&&t&&card.dataset.tid!==String(t.id)){renderNow(T0());return}if(el&&t)el.innerHTML=liveHTML(t);const t0=T0();if(t0&&cur==="current")renderCurrent(t0)}
+function liveStep(a){const t=viewTrip();if(!t)return;if(a==="lvauto"){LIVE={sim:false,d:0,i:-1};refreshLive();return}
  const c=liveCalc(t);if(!c)return;let{d,i}=c;const D=c.D;
  if(a==="lvnext"){if(i<D[d].items.length-1)i++;else if(d<D.length-1){d++;i=-1}}else{if(i>-1)i--;else if(d>0){d--;i=D[d].items.length-1}}
- LIVE={sim:true,d,i};refreshLive()}
+ LIVE={sim:true,d,i};refreshLive();jellyAfter(a)}
+
+/* ===== 行程頁水卡：顯示用行程（只決定顯示哪一趟，不改資料；T0() 不動）===== */
+function tripSpan(t){const s=t.startDate?new Date(t.startDate+"T00:00"):null;if(!s||isNaN(s))return null;const n=Array.isArray(t.days)&&t.days.length?t.days.length:(+t.nDays||1);let e=t.endDate?new Date(t.endDate+"T23:59:59"):null;if(!e||isNaN(e)||e<s)e=new Date(s.getTime()+n*864e5-1);return[s.getTime(),e.getTime()]}
+function tripList(){const L=visible().map(t=>({t,sp:tripSpan(t)}));L.sort((a,b)=>a.sp&&b.sp?(a.sp[0]-b.sp[0]||a.sp[1]-b.sp[1]):a.sp?-1:b.sp?1:0);return L.map(x=>x.t)}
+function pickTrip(L){L=L||tripList();if(!L.length)return null;const now=Date.now(),on=[],near=[];for(const t of L){const sp=tripSpan(t);if(!sp)continue;if(now>=sp[0]&&now<=sp[1]){on.push(t);continue}near.push({t,d:now<sp[0]?sp[0]-now:now-sp[1]})}
+ if(on.length)return on.find(x=>x.status==="now")||on[0];
+ const cur0=L.find(x=>x.status==="now");if(cur0)return cur0;
+ near.sort((a,b)=>a.d-b.d);const live=near.find(x=>x.t.status!=="past");return(live||near[0]||{}).t||L.find(x=>x.status!=="past")||L[0]}
+function viewTrip(){const L=tripList();if(VIEW_ID){const f=L.find(x=>x.id===VIEW_ID);if(f)return f;VIEW_ID=null}return pickTrip(L)}
+function TV(){return RV||(cur==="now"&&viewTrip())||T0()}
+function LT(){return viewTrip()||T0()}
+function reducedMotion(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}}
+function bounce(el){if(!el||reducedMotion())return;el.classList.remove("jelly");void el.offsetWidth;el.classList.add("jelly");setTimeout(()=>el.classList.remove("jelly"),460)}
+function jellyAfter(a){const b=document.querySelector('#live [data-a="'+a+'"]:not(:disabled)');if(b)bounce(b)}
+function rippleAt(card,e){if(reducedMotion())return;const Ly=card.querySelector(".nc-rip");if(!Ly)return;const r=Ly.getBoundingClientRect();let x=e.clientX-r.left,y=e.clientY-r.top;if(!e.detail||!e.clientX){x=r.width/2;y=r.height/2}const s=Math.hypot(Math.max(x,r.width-x),Math.max(y,r.height-y))*2,i=document.createElement("i");i.className="ripple";i.style.cssText=`width:${s}px;height:${s}px;left:${x-s/2}px;top:${y-s/2}px`;Ly.appendChild(i);setTimeout(()=>i.remove(),700)}
+document.addEventListener("click",e=>{const card=e.target.closest("#nowcard");if(!card)return;if(e.target.closest(".nc-top"))rippleAt(card,e);const bt=e.target.closest(".nc-btn,.lvnav");if(bt&&(bt.matches(".lvnav")||!bt.closest("#live")))bounce(bt)});
+function nowToggle(){NOWOPEN=!NOWOPEN;const c=$("#nowcard"),m=$("#ncmore");if(!c)return;c.classList.toggle("is-open",NOWOPEN);if(m){if(NOWOPEN)m.removeAttribute("inert");else m.setAttribute("inert","")}document.querySelectorAll("#live .nc-hd").forEach(x=>x.setAttribute("aria-expanded",String(NOWOPEN)));if(NOWOPEN){bounce(c);setTimeout(()=>{try{MiniMap.refresh()}catch(e){}},400)}}
+function tripNext(){const L=tripList();if(L.length<2)return;const c=viewTrip(),i=L.findIndex(x=>c&&x.id===c.id),n=L[(i+1)%L.length];VIEW_ID=n.id;LIVE={sim:false,d:0,i:-1};renderNow(T0());try{syncLoc()}catch(e){}bounce($("#nowcard"));toast("顯示："+(n.title||"未命名行程"));if(NOWOPEN)setTimeout(()=>{try{MiniMap.refresh()}catch(e){}},50)}
+function nowEmpty(){if(!FB_OK||!me)return emptyNow();
+ return`<div class="nowrow"><article class="nowcard glass is-empty" id="nowcard"><span class="nc-rip" aria-hidden="true"></span><div class="nc-top"><div class="nc-hd static"><span class="ldot" aria-hidden="true"></span><b class="nc-t">還沒有行程</b></div><p class="nc-note">新增第一趟旅行後，這裡會顯示現在與下一步。</p><div class="nc-ctl"><button type="button" class="nc-btn" data-a="add" data-v="now">來趟旅行吧！</button></div><div class="nc-ctl"><button type="button" class="nc-btn sub" data-a="join">輸入邀請碼</button><button type="button" class="nc-btn sub" data-a="tpl">匯入範例：北海道</button></div></div></article></div>`+guide()+(foodSnap()?'<div class="pills" style="margin-top:10px"><button class="pill gl" data-a="m" data-v="diet">飲食卡（離線快照）</button></div>':"")}
 /* ===== 每日行程：純 Tab View（一次只顯示一天） ===== */
 const daysAcc=(t,di)=>dayHTML(t,di);
 function focusDay(t,i,go){dayI[t.id]=i;const b=$("#dayblk");if(b)b.innerHTML=dayHTML(t,i);document.querySelectorAll("#dtabs button").forEach((x,n)=>x.classList.toggle("on",n===i));if(go){const d=$("#dtabs");if(d)d.scrollIntoView({behavior:"smooth",block:"start"})}}
-window.addEventListener("afterprint",()=>{const t=T0(),b=$("#dayblk");if(t&&b)b.innerHTML=dayHTML(t,dayI[t.id]||0)});
+window.addEventListener("afterprint",()=>{const t=TV(),b=$("#dayblk");if(t&&b)b.innerHTML=dayHTML(t,dayI[t.id]||0)});
 window.addEventListener("resize",()=>{try{MapView.refresh();MiniMap.refresh()}catch(e){}});
 
 /* ===== 備份：匯出 / 匯入 JSON ===== */
@@ -1076,7 +1105,7 @@ async function importBackup(f){if(!f)return;if(!me)return toast("請先登入再
 /* ===== 新版本提示 ===== */
 function showUpd(){let b=document.getElementById("updbar");if(!b){b=document.createElement("button");b.id="updbar";b.textContent="有新版本，點此更新";b.onclick=()=>location.reload();document.body.appendChild(b)}b.classList.add("on")}
 
-function bar(arch){let h=bar0(arch);if(arch){const t=T0();if(t)h=h.replace(/<\/div>$/,`<button class="pill mini ed" data-a="edit" data-v="${esc(t.id)}">編輯行程資訊</button><button class="pill mini ed" data-a="ai">AI 小精靈</button></div>`)}return h}
+function bar(arch,t0){let h=bar0(arch);if(arch){const t=t0||T0();if(t){const R='<button class="pill mini ed" data-a="tplreset">重設為範例</button>';h=h.split(R).join("");h=h.replace(/<\/div>$/,`${TPL&&t.templateId===TPL.id?R:""}<button class="pill mini ed" data-a="edit" data-v="${esc(t.id)}">編輯行程資訊</button><button class="pill mini ed" data-a="ai">AI 小精靈</button></div>`)}}return h}
 function drawerExtra(){const I=n=>`<i class="ic ic-${n}"></i>`;
  return me?`<p class="grp">${I("user")}${esc(me.displayName||me.email||"我")}</p><button data-a="add" data-v="now">${I("plus")}新增行程</button><button data-a="ai">${I("spark")}AI 小精靈</button><button data-a="disc">${I("compass")}探索與範例</button><button data-a="datam">${I("up")}資料與備份</button><button data-a="auth">${I("out")}登出</button>`
  :`<p class="grp">帳戶</p><button class="login" data-a="auth">Google 一鍵登入</button>`}
@@ -1125,7 +1154,7 @@ function showPlan(p){AIPLAN=cleanPlan(p);const o=$("#ai-out");if(!o)return;
 function aiMic(){if(!SR)return;const b=$("#ai-mic");if(REC){REC.stop();return}REC=new SR();REC.lang="zh-TW";REC.interimResults=false;
  REC.onresult=ev=>{const tx=[...ev.results].map(r=>r[0].transcript).join(""),el=$("#ai-q");el.value=(el.value?el.value+" ":"")+tx};REC.onend=()=>{REC=null;micState(false)};REC.onerror=()=>{REC=null;micState(false)};micState(true);REC.start()}
 function micState(on){const b=$("#ai-mic");if(!b)return;b.classList.toggle("on",!!on);b.setAttribute("aria-label",on?"停止語音輸入":"語音輸入");b.title=on?"聆聽中":"語音輸入"}
-async function aiApply(){const plan=AIPLAN;if(!plan||!me)return;const mode=$("#ai-mode").value,t=T0();
+async function aiApply(){const plan=AIPLAN;if(!plan||!me)return;const mode=$("#ai-mode").value,t=TV();
  const mk=(d,i,t0)=>{let date="";if(t0&&/^\d{4}-\d{2}-\d{2}/.test(t0.startDate||"")){const x=new Date(t0.startDate+"T00:00");x.setDate(x.getDate()+i);date=`${x.getMonth()+1}/${x.getDate()}（${"日一二三四五六"[x.getDay()]}）`}return{k:"D"+(i+1),date,city:d.city,wx:"",tp:"",pos:d.pos,more:"",items:d.items.map(x=>({...x,type:"",more:""}))}};
  try{let tid;
   if(mode==="new"||!t){await archiveNow("");const ref=doc(collection(db,"trips"));tid=ref.id;await setDoc(ref,{...clean({title:plan.title||"AI 行程",country:"",countryCode:"",startDate:"",endDate:"",image:"",notes:"由 AI 小精靈生成",nDays:plan.days.length,spots:[],days:plan.days.map((d,i)=>mk(d,i,null)),booking:[],expenses:[],currency:"TWD",diets:{},ext:EXT0,owner:me.uid,members:[me.uid],memberNames:{[me.uid]:me.displayName||"我"},st:{[me.uid]:"now"}}),createdAt:serverTimestamp()})}
@@ -1183,13 +1212,13 @@ const AI_PROVIDERS=[
  {id:"manual",label:"手動模式（免費）",mode:"manual",available:async()=>true}];
 const AI_CHIPS=["5 天輕鬆行程，多留點咖啡廳時間","親子友善、少走路","美食為主，不吃生食","雨天備案：全室內景點"];
 const buildPrompt=(q,x="")=>{q=String(q||"").replace(/[\u0000-\u001f\u007f]/g," ").trim().slice(0,AI_LIMITS.maxPrompt);return`你是旅遊行程規劃師。請依下列需求，用繁體中文規劃行程，並「只輸出 JSON」（不要任何說明、不要 Markdown 程式碼框），格式如下：\n${AI_SCHEMA}\n規則：每天 3～8 個項目；t 用 24 小時制 HH:MM；q 填可在地圖搜尋的地點全名（含城市）；最多 14 天。\n需求：${q||"（請填寫需求）"}${x?"\n補充條件："+x:""}`};
-function aiCtx(){const t=T0();let s="";if(!t)return s;const mode=($("#ai-mode")||{}).value;
+function aiCtx(){const t=TV();let s="";if(!t)return s;const mode=($("#ai-mode")||{}).value;
  if(mode&&mode!=="new")s+=`目前行程：${t.title}${t.country?"（"+t.country+"）":""}${t.startDate?"，"+t.startDate+" 出發":""}。`;
  if($("#ai-diet")&&$("#ai-diet").checked){const m=foodModel(t.diets||{},t.members||[],t.memberNames||{}),a=[...m.strict,...m.soft].map(k=>TERM[k][0]),al=m.allergy.map(k=>TERM[k][0]);if(a.length)s+=`團隊飲食：避開${a.join("、")}，餐廳請優先安排有對應餐點的店。`;if(al.length)s+=`過敏：${al.join("、")}。`}
  return s}
 const aiPrompt=()=>buildPrompt(($("#ai-q")||{}).value,aiCtx());
 const aiManualHTML=()=>`<ol class="ai-steps"><li><b>複製提示詞，到任一 AI 貼上</b><div class="pills">${AI_LINKS.map((l,i)=>`<button class="pill ${i?"gl":""}" data-a="aiopen" data-v="${i}">${l[0]}</button>`).join("")}</div></li><li><b>把回覆貼回來</b><div class="pills"><button class="pill" data-a="aipasteclip">貼上並預覽</button></div><details><summary class="meta">手動貼上</summary><textarea class="fi" id="ai-json" rows="4" placeholder="貼上 AI 回覆的 JSON"></textarea><div class="pills"><button class="pill gl" data-a="aipaste">解析並預覽</button></div></details></li></ol>`;
-function aiHTML(){const t=T0(),hasDiet=!!(t&&t.diets&&Object.keys(t.diets).length);
+function aiHTML(){const t=TV(),hasDiet=!!(t&&t.diets&&Object.keys(t.diets).length);
  return`<div class="ai"><div class="ai-h"><span class="ai-ic"><i class="ic ic-spark"></i></span><div><h3>AI 小精靈</h3><p class="meta">一句話，排出每日行程。</p></div></div>
  <div class="ai-box"><textarea class="fi" id="ai-q" rows="3" maxlength="${AI_LIMITS.maxPrompt}" placeholder="例如：北海道 5 天，不吃肉，喜歡溫泉與雪景"></textarea>${SR?'<button class="ai-mic" data-a="aimic" id="ai-mic" aria-label="語音輸入"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v4"/></svg></button>':""}</div>
  <div class="ai-chips">${AI_CHIPS.map(c=>`<button class="ai-chip" data-a="aichip" data-v="${esc(c)}">${esc(c)}</button>`).join("")}</div>
@@ -1211,7 +1240,7 @@ let LOCSUB=null,LOCTRIP=null,LOCS={},LOCWATCH=null,LOCLAST={t:0,lat:0,lng:0};
 const LOCMAX=12*3600e3,locKey=id=>"tp-loc-"+id,isIOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 const locOn=id=>{try{const v=+localStorage.getItem(locKey(id));return v&&Date.now()-v<LOCMAX}catch(e){return false}};
 function locBarHTML(t){const on=locOn(t.id),n=Object.keys(LOCS).length;return`<span class="meta">${on?(n?`分享中・${n} 人`:"分享中"):"未分享"}</span><button class="pill mini2 ${on?"":"gl"}" data-a="locshare">${on?"停止":"分享位置"}</button><button class="pill mini2 gl" data-a="people">同行位置</button>`}
-function updLocBar(){const t=T0(),el=document.getElementById("locbar");if(el&&t)el.innerHTML=locBarHTML(t)}
+function updLocBar(){const t=LT(),el=document.getElementById("locbar");if(el&&t)el.innerHTML=locBarHTML(t)}
 const locDoc=(tid,uid)=>doc(db,"trips",tid,"live",uid);
 function startShare(t){if(!me||!navigator.geolocation)return toast("這個瀏覽器無法取得定位");if(LOCWATCH!=null)return;
  try{localStorage.setItem(locKey(t.id),String(Date.now()))}catch(e){}
@@ -1222,12 +1251,12 @@ function startShare(t){if(!me||!navigator.geolocation)return toast("這個瀏覽
  updLocBar()}
 function stopShare(t,del){if(LOCWATCH!=null){try{navigator.geolocation.clearWatch(LOCWATCH)}catch(e){}LOCWATCH=null}try{localStorage.removeItem(locKey(t.id))}catch(e){}
  if(del&&me&&db)deleteDoc(locDoc(t.id,me.uid)).catch(()=>{}).then(()=>{if(safeOn(t.id))writeLast(t,"last")});updLocBar()}
-function syncLoc(){const t=T0();syncReq();
+function syncLoc(){const t=LT();syncReq();
  if(!me||!t||!FB_OK){if(LOCSUB){LOCSUB();LOCSUB=null}LOCTRIP=null;LOCS={};if(LOCWATCH!=null){try{navigator.geolocation.clearWatch(LOCWATCH)}catch(e){}LOCWATCH=null}return}
  if(LOCTRIP!==t.id){if(LOCSUB){LOCSUB();LOCSUB=null}LOCTRIP=t.id;LOCS={};if(LOCWATCH!=null){try{navigator.geolocation.clearWatch(LOCWATCH)}catch(e){}LOCWATCH=null}
   LOCSUB=onSnapshot(collection(db,"trips",t.id,"live"),sn=>{LOCS={};sn.docs.forEach(d=>LOCS[d.id]=d.data());drawMembers();updLocBar()},er=>console.warn("[loc] 讀取失敗",er.code||er))}
  if(locOn(t.id)&&LOCWATCH==null)startShare(t);else if(!locOn(t.id)&&LOCWATCH!=null)stopShare(t,true)}
-function drawMembers(){const t=T0();if(!t||typeof MiniMap==="undefined")return;const now=Date.now();
+function drawMembers(){const t=LT();if(!t||typeof MiniMap==="undefined")return;const now=Date.now();
  const list=Object.entries(LOCS).filter(([u,d])=>d&&typeof d.lat==="number"&&now-(d.ts||0)<((d.kind||"live")==="live"?3600e3:864e5)).map(([u,d])=>({uid:u,name:u===(me&&me.uid)?"我":(nameOf(t,u)!==u?nameOf(t,u):d.name||"成員"),lat:d.lat,lng:d.lng,acc:d.acc||0,ts:d.ts||0,kind:d.kind||"live",me:u===(me&&me.uid)}));
  MiniMap.setMembers(list,memberPopup)}
 const KL={live:"即時",last:"最後已知",checkin:"報平安"};
@@ -1270,8 +1299,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
  switch(a){
   case"aichip":{const q=$("#ai-q");if(q){q.value=(q.value?q.value.replace(/\s+$/,"")+"，":"")+v;q.focus()}break}
   case"aimodeset":{const h=$("#ai-mode");if(h)h.value=v;b.parentNode.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));break}
-  case"people":{const t=T0();if(t&&me)modal(peopleHTML(t));break}
-  case"askloc":{const t=T0();if(t&&me)askLoc(t,v);break}
+  case"people":{const t=LT();if(t&&me)modal(peopleHTML(t));break}
+  case"askloc":{const t=LT();if(t&&me)askLoc(t,v);break}
   case"safetoggle":{const t=T0();if(!t||!me)break;if(safeOn(t.id)){try{localStorage.removeItem(safeKey(t.id))}catch(e){}if(LOCWATCH==null&&db)deleteDoc(locDoc(t.id,me.uid)).catch(()=>{});toast("已關閉自動更新");modal(peopleHTML(t));updLocBar()}
    else if(confirm("開啟後，每次打開 App 都會更新你的最後已知位置給這趟行程的成員。要開啟嗎？")){try{localStorage.setItem(safeKey(t.id),String(Date.now()))}catch(e){}SAFE_T=Date.now();writeLast(t,"last").then(ok=>{toast(ok?"自動更新已開啟":"沒有定位權限，請在瀏覽器設定允許");modal(peopleHTML(t));updLocBar()})}break}
   case"checkin":{const t=T0();if(!t||!me)break;toast("取得位置中…");writeLast(t,"checkin",true).then(ok=>toast(ok?"已向成員報平安":"取得位置失敗，請確認定位權限"));break}
@@ -1282,7 +1311,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
   case"aiauto":aiAuto();break;
   case"aiopen":{const l=AI_LINKS[+v];if(!l)break;const q=aiPrompt();copy(q,"已複製提示詞，貼上送出即可");window.open(l[1](q),"_blank","noopener");break}
   case"aipasteclip":{if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(tx=>{if(!tx||!tx.trim())return toast("剪貼簿是空的，請先複製 AI 的回覆");const j=$("#ai-json");if(j)j.value=tx;showPlan(tx)}).catch(()=>{toast("無法讀取剪貼簿，請在「手動貼上」貼入");const d=document.querySelector("#ai-act details");if(d)d.open=true})}else{toast("請在「手動貼上」貼入回覆");const d=document.querySelector("#ai-act details");if(d)d.open=true}break}
-  case"locshare":{const t=T0();if(!t)break;if(!me)return toast("請先登入");if(locOn(t.id)){stopShare(t,true);toast("已停止分享位置")}else if(confirm("開啟後，你的即時位置會顯示給這趟行程的所有成員。要開啟嗎？"))startShare(t);break}
+  case"locshare":{const t=LT();if(!t)break;if(!me)return toast("請先登入");if(locOn(t.id)){stopShare(t,true);toast("已停止分享位置")}else if(confirm("開啟後，你的即時位置會顯示給這趟行程的所有成員。要開啟嗎？"))startShare(t);break}
  }});
 // === 以下是步驟 1 的工具函式 ===
 
@@ -1601,7 +1630,7 @@ render(t){try{if(this.m)this.m.remove()}catch(e){}this.m=null;const el=document.
  this.sel=null;this.m.on("popupclose",()=>{this.sel=null});
  const ll=[];
  pts.forEach(p=>{const on=!!placed[p.id];ll.push([p.lat,p.lng]);
-  const d=document.createElement("div");d.style.cssText="font-size:13px;line-height:1.5;color:var(--text)";const h=document.createElement("b");h.style.fontSize="16px";h.textContent=p.name;d.appendChild(h);const meta=[p.must?"必去":"",on?"已排 "+placed[p.id]:"",p.area||""].filter(Boolean).join("・");if(meta){const m=document.createElement("div");m.style.color="var(--text-2)";m.textContent=meta;d.appendChild(m)}if(p.note){const n=document.createElement("div");n.style.cssText="margin-top:4px;white-space:pre-wrap";n.textContent=p.note;d.appendChild(n)}const nv=document.createElement("a");nv.className="pill gl mini";nv.target="_blank";nv.rel="noopener";nv.textContent="導航";nv.style.cssText="display:inline-flex;align-items:center;justify-content:center;margin-top:8px;color:var(--text);text-decoration:none";nv.href="https://www.google.com/maps/dir/?api=1&destination="+p.lat+","+p.lng+"&travelmode=walking";d.appendChild(nv);const pb=document.createElement("button");pb.type="button";pb.className="pill gl mini";pb.textContent="排入";pb.style.cssText="display:inline-flex;align-items:center;justify-content:center;margin:8px 0 0 8px;color:var(--text)";pb.addEventListener("click",()=>{const c=T0();if(c)poolPlanForm(c,p.id)});d.appendChild(pb);
+  const d=document.createElement("div");d.style.cssText="font-size:13px;line-height:1.5;color:var(--text)";const h=document.createElement("b");h.style.fontSize="16px";h.textContent=p.name;d.appendChild(h);const meta=[p.must?"必去":"",on?"已排 "+placed[p.id]:"",p.area||""].filter(Boolean).join("・");if(meta){const m=document.createElement("div");m.style.color="var(--text-2)";m.textContent=meta;d.appendChild(m)}if(p.note){const n=document.createElement("div");n.style.cssText="margin-top:4px;white-space:pre-wrap";n.textContent=p.note;d.appendChild(n)}const nv=document.createElement("a");nv.className="pill gl mini";nv.target="_blank";nv.rel="noopener";nv.textContent="導航";nv.style.cssText="display:inline-flex;align-items:center;justify-content:center;margin-top:8px;color:var(--text);text-decoration:none";nv.href="https://www.google.com/maps/dir/?api=1&destination="+p.lat+","+p.lng+"&travelmode=walking";d.appendChild(nv);const pb=document.createElement("button");pb.type="button";pb.className="pill gl mini";pb.textContent="排入";pb.style.cssText="display:inline-flex;align-items:center;justify-content:center;margin:8px 0 0 8px;color:var(--text)";pb.addEventListener("click",()=>{const c=TV();if(c)poolPlanForm(c,p.id)});d.appendChild(pb);
   const mk=L.circleMarker([p.lat,p.lng],{radius:p.must?9:7,color:on?"#FFFFFF":"#FF7A00",weight:on?2:2.5,fillColor:"#FF7A00",fillOpacity:on?.9:0}).addTo(this.m);
   mk.on("click",e=>{L.DomEvent.stopPropagation(e);if(this.sel===p.id){this.reset();return}
    const tok=++this.tok,open=()=>{if(tok!==this.tok)return;L.popup({offset:[0,-4],maxWidth:240,autoPan:true,autoPanPadding:[20,20],closeOnClick:false}).setLatLng([p.lat,p.lng]).setContent(d).openOn(this.m);this.sel=p.id};
@@ -1626,9 +1655,9 @@ async function poolGeoAll(tid,quiet){if(poolGeoBusy){poolGeoAgain=true;return}po
   if(c){patch(t,{pool:next});render()}
   if(!quiet)toast(c?`已標出 ${c} 個地點`:"沒有找到座標")
  }while(poolGeoAgain)}finally{poolGeoBusy=false}}
-document.addEventListener("click",e=>{const b=e.target.closest('[data-a="poolgeo"],[data-a="georetry"]');if(!b)return;const t=T0();if(!t)return;
+document.addEventListener("click",e=>{const b=e.target.closest('[data-a="poolgeo"],[data-a="georetry"]');if(!b)return;const t=TV();if(!t)return;
  if(b.dataset.a==="poolgeo")poolGeoAll(t.id,false);else{toast("重新查詢中…");geocodeAI(t.id)}});
 document.addEventListener("click",e=>{if(!e.target.closest('[data-a="poolmaptoggle"]'))return;poolMapOpen=!poolMapOpen;render()});
-document.addEventListener("click",e=>{if(!e.target.closest('[data-a="dmaptoggle"]'))return;dailyMapOpen=!dailyMapOpen;const b=document.getElementById("dmapbtn"),w=document.getElementById("ptdaily");if(b)b.textContent=dailyMapOpen?"收合地圖":"顯示地圖";if(w)w.classList.toggle("dmap-on",dailyMapOpen);if(dailyMapOpen)setTimeout(()=>{const t=T0();if(t){try{refreshDays(t)}catch(e){}try{drawMembers()}catch(e){}}},80)});
+document.addEventListener("click",e=>{if(!e.target.closest('[data-a="dmaptoggle"]'))return;dailyMapOpen=!dailyMapOpen;const b=document.getElementById("dmapbtn"),w=document.getElementById("ptdaily");if(b)b.textContent=dailyMapOpen?"收合地圖":"顯示地圖";if(w)w.classList.toggle("dmap-on",dailyMapOpen);if(dailyMapOpen)setTimeout(()=>{const t=TV();if(t){try{refreshDays(t)}catch(e){}try{drawMembers()}catch(e){}}},80)});
 // ===== /口袋名單地圖 =====
-window.QA_API = { toast, esc, getLocalDateStr, getTodayItems, T0, addExpense, addMemoEntry, editMemoEntry, deleteMemoEntry, addPoolPlace, editPoolPlace, deletePoolPlace, poolAreas, canEdit:(t)=>!!me&&!!t&&(t.members||[]).includes(me.uid) };
+window.QA_API = { toast, esc, getLocalDateStr, getTodayItems, T0: TV, addExpense, addMemoEntry, editMemoEntry, deleteMemoEntry, addPoolPlace, editPoolPlace, deletePoolPlace, poolAreas, canEdit:(t)=>!!me&&!!t&&(t.members||[]).includes(me.uid) };
