@@ -850,7 +850,6 @@ body.bnav-hide .bnav{transform:translateY(130%)}
 .more-card .ic{width:22px;height:22px;margin:0}
 .more-card:active{opacity:.85}
 .more-card svg{display:block;flex:none;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
-.more-card.sos{grid-column:1/-1;flex-direction:row;gap:8px;min-height:64px}
 .more-card.sos svg{stroke:#C2402A}
 
 /* ===== patch-css: 備忘錄頁、緊急頁、白底圓膠囊按鈕 ===== */
@@ -877,8 +876,6 @@ body.bnav-hide .bnav{transform:translateY(130%)}
 .cr li>div>span{font-size:13px;color:var(--text-2)}
 
 /* ===== patch-css: 口袋名單 ===== */
-#t-now[data-nt="pool"] .pt-daily{display:none}
-#t-now:not([data-nt="pool"]) .pt-pool{display:none}
 .pt-top{justify-content:flex-end;margin-top:16px}
 .pt-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(34,48,42,.07)}
 .pt-row:last-child{border-bottom:none}
@@ -887,12 +884,16 @@ body.bnav-hide .bnav{transform:translateY(130%)}
 .pt-star{flex:0 0 auto}
 .pt-note{font-size:13px;color:var(--text-2);margin:4px 0 0;white-space:pre-wrap}
 .pt-tag{display:inline-block;font-size:13px;color:var(--text-2);margin-top:4px}
+.pt-card{padding:8px 16px;margin:0 0 16px}
+.pt-card .pt-row{cursor:pointer}
+.pt-card .cb,.pt-card .x{-webkit-backdrop-filter:none;backdrop-filter:none}
+.pt-row.sel{box-shadow:inset 3px 0 0 var(--accent);padding-left:12px}
 
 /* pool spacing */
-#t-now .pt-pool{margin-top:16px}
+#t-pool .pt-pool{margin-top:16px}
 
 /* pool map */
-#t-now .pt-pool .mapbox{margin:16px 0 8px}
+#t-pool .pt-pool .mapbox{margin:16px 0 8px}
 #poolmap{width:100%;height:320px;border-radius:28px;overflow:hidden}
 
 /* ===== patch-css: 每日頁減法 ===== */

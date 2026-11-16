@@ -52,7 +52,7 @@ function acct(t,L,r){const c=cfg(t),S=settle({members:c.members,all:[...c.member
  <h4 class="meta" style="margin:12px 0 2px">明細</h4>${L.map((e,i)=>`<div class="row"><span>${esc(e.item)}<br><small class="meta">${esc(lbl(t,e.paidBy))} 付</small></span><b>${fmt(e.amount,cur)}</b><button class="x ed" data-a="delex" data-v="${i}" aria-label="刪除"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`).join("")||'<p class="meta">尚無明細</p>'}`}
 /* --- Hokkaido sub pages --- */
 const T0=()=>visible().find(x=>x.status==="now");
-let cur="current";const LB={today:"今天",more:"更多",now:"行程總覽",tix:"票券與預約",storm:"備忘錄",yen:"匯率與帳本",pack:"打包清單",map:"全球足跡",past:"歷史旅程",future:"未來清單",current:"當前行程"};const SUB=["now","tix","storm","yen","pack"];
+let cur="current";const LB={today:"今天",more:"更多",pool:"口袋清單",now:"行程總覽",tix:"票券與預約",storm:"備忘錄",yen:"匯率與帳本",pack:"打包清單",map:"全球足跡",past:"歷史旅程",future:"未來清單",current:"當前行程"};const SUB=["now","pool","tix","storm","yen","pack"];
 const RATES={JPY:.21,KRW:.024,THB:.9,USD:32,EUR:35,CHF:36,TWD:1};
 const curOf=()=>{const t=T0();return t?cfg(t).currency:"JPY"};
 const rate=()=>parseFloat(load("tp-rate-"+curOf()))||RATES[curOf()]||1;
@@ -81,7 +81,7 @@ const memoOf=t=>{
 const saveMemo=(t,m)=>patch(t,{memo:m});
 const eb=(k,i)=>`<span class="ed mb"><button class="x" data-a="memoedit" data-v="${k}:${i}" aria-label="編輯"><i class=i-edit></i></button><button class="x" data-a="memodel" data-v="${k}:${i}" aria-label="刪除"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>`;
 const meb=id=>`<span class="ed mb"><button class="x" data-a="meedit" data-v="${esc(id)}" aria-label="編輯"><i class=i-edit></i></button><button class="x" data-a="medel" data-v="${esc(id)}" aria-label="刪除"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>`;
-let stormTab="memo";let nowTab="daily";
+let stormTab="memo";
 function groupEntriesByDate(entries){
   const list=(entries||[]).slice().reverse();
   const map=new Map();
@@ -131,9 +131,9 @@ function packHTML(t){const P=plist(t),sec=(k,ti)=>`<h2 class="sec">${ti}</h2><di
  return sec("pack","冬季裝備")+sec("gift","伴手禮／想買")}
 function calc(){const v=parseFloat($("#jpy")?.value)||0,r=parseFloat($("#rate")?.value)||0;if(!$("#twd"))return;if(r)store("tp-rate-"+curOf(),r);$("#twd").textContent="NT$ "+Math.round(v*r).toLocaleString();
  $("#qk").innerHTML=[1000,5000,10000,20000].map(x=>`<button data-a="q" data-v="${x}"><small>${x.toLocaleString()}</small>NT$${Math.round(x*r).toLocaleString()}</button>`).join("")}
-function renderNow(t){const ids=["now","tix","storm","yen","pack"],emp=emptyNow(),vt=viewTrip();
+function renderNow(t){const ids=["now","pool","tix","storm","yen","pack"],emp=emptyNow(),vt=viewTrip();
  const f={tix:t=>bar()+tixHTML(t),storm:t=>bar()+stormHTML(t),yen:t=>bar()+yenHTML(t),pack:t=>bar()+packHTML(t)};
- ids.forEach(i=>{$("#t-"+i).innerHTML=i==="now"?(vt?bar(1,vt)+nowCard(vt):nowEmpty()):(t?f[i](t):emp)});
+ ids.forEach(i=>{$("#t-"+i).innerHTML=i==="now"?(vt?bar(1,vt)+nowCard(vt):nowEmpty()):i==="pool"?(vt?bar()+poolHTML(vt):emp):(t?f[i](t):emp)});
  calc();if(vt){MiniMap.render("nowmap",ptsOf(vt),pickPt);try{PoolMap.render(vt)}catch(e){}}if(t){try{buildFood(t)}catch(e){}}}
 
 /* 當前行程：旅行當下專用頁 */
@@ -270,7 +270,7 @@ function nowCard(t){const D=getDays(t),di=Math.min(dayI[t.id]??todayIdx(t),Math.
  <div class="nc-id"><small>${flagOf(t)}${t.country?" "+esc(t.country):""}</small><h2>${esc(t.title)}</h2><p>${esc(t.startDate||"日期未定")}${t.endDate?" – "+esc(t.endDate.slice(5)):""}・${n} 天${(t.members||[]).length>1?`・${t.members.length} 人共編`:""}</p>${t.notes?`<p>${esc(t.notes)}</p>`:""}<div class="cdp" id="cd"></div></div>
  <div class="pt-daily${dailyMapOpen?" dmap-on":""}" id="ptdaily"><div class="days" id="dtabs">${tabsHTML(t,di)}</div><div id="dayblk">${daysAcc(t,di)}</div>
  <div class="dtools"><button class="pill gl mini2" data-a="dmaptoggle" id="dmapbtn">${dailyMapOpen?"收合地圖":"顯示地圖"}</button><div class="locbar" id="locbar">${locBarHTML(t)}</div></div><div class="glass mapbox dmapbox"><div id="nowmap" class="nowmap" role="application" aria-label="行程地圖"></div></div>${dailyMissingHTML(t)}</div>
- </div></div></div><button type="button" class="page-btn pg-auto nc-sw" data-a="tripnext" aria-label="切換行程（目前：${esc(t.title)}）"${many?"":" disabled"}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button></article></div>${poolSeg()}${poolHTML(t)}`}finally{RV=null}}
+ </div></div></div><button type="button" class="page-btn pg-auto nc-sw" data-a="tripnext" aria-label="切換行程（目前：${esc(t.title)}）"${many?"":" disabled"}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button></article></div>`}finally{RV=null}}
 function ptsOf(t){const P=[];getDays(t).forEach((d,i)=>d.items.forEach(x=>{if(x.lat!=null)P.push({lat:x.lat,lng:x.lng,day:i,dayLabel:`${d.k} ${d.date||""}`.trim(),time:x.t||"",title:x.h,place:x.q||"",note:x.d||""})}));if(!P.length)(t.spots||[]).forEach(s=>P.push({lat:s.lat,lng:s.lng,day:(s.day||1)-1,dayLabel:s.day?"D"+s.day:"",time:"",title:s.name,place:"",note:s.note||""}));return P}
 function refreshDays(t){const D=getDays(t),di=Math.min(dayI[t.id]??0,Math.max(0,D.length-1));dayI[t.id]=di;$("#dtabs").innerHTML=tabsHTML(t,di);$("#dayblk").innerHTML=daysAcc(t,di);MiniMap.render("nowmap",ptsOf(t),pickPt)}
 async function saveItem(){const t=TV(),f=document.querySelector(".fm"),di=+f.dataset.di,ii=f.dataset.ii===""?null:+f.dataset.ii,v=i=>$("#fi-"+i).value.trim(),h=v("h");if(!h)return toast("請填寫標題");
@@ -786,7 +786,6 @@ if(b.closest("#drawer")&&a&&a!=="menu")document.body.classList.remove("dr");
  if(a==="memoedit"&&t){const[k,i]=v.split(":");memoForm(k,+i);return}
  if(a==="memodel"&&t){const[k,i]=v.split(":"),M=memoOf(t);M[k].splice(+i,1);saveMemo(t,M);$("#t-storm").innerHTML=bar()+stormHTML(t);return}
  if(a==="memonew"){window.openQuickAdd?.({type:"note"});return}
-  if(a==="nowtab"){nowTab=v==="pool"?"pool":"daily";applyNowTab();return}
   if(a==="poolnew"){window.openQuickAdd?.({type:"place"});return}
   if(a==="poolplan"&&t){poolPlanForm(t,v);return}
   if(a==="poolplanok"&&t){poolPlanSave(t);return}
@@ -853,15 +852,15 @@ document.addEventListener("input",e=>{if(e.target.id==="jpy"||e.target.id==="rat
 document.addEventListener("change",e=>{const c=e.target.closest("input[data-k]"),t=T0();if(!c||!t)return;const P=plist(t);P[c.dataset.k][+c.dataset.i].d=c.checked?1:0;savePl(t,P);c.closest(".ck").classList.toggle("done",c.checked)});
 
 document.addEventListener("change",e=>{const i=e.target.closest("input[data-b]"),t=T0();if(!i||!t)return;const L=bkList(t);L[+i.dataset.i][i.dataset.b]=i.value.trim();saveBk(t,L)});
-function go(id){setEdit(false);cur=id;document.body.dataset.pg=id;document.body.classList.remove("dr");document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("on",p.id==="t-"+id));renderDrawer();window.scrollTo({top:0});if(id==="map")MapView.refresh();if(id==="now"||id==="current")MiniMap.refresh();if(id==="current")renderCurrent(T0());if(id==="today")renderToday();updateBnav()}
-const ICN={today:"clock",now:"cal",tix:"card",storm:"note",yen:"yen",pack:"chk",map:"globe",past:"clock",future:"compass",current:"nav"};
+function go(id){setEdit(false);cur=id;document.body.dataset.pg=id;document.body.classList.remove("dr");document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("on",p.id==="t-"+id));renderDrawer();window.scrollTo({top:0});if(id==="map")MapView.refresh();if(id==="now"||id==="current")MiniMap.refresh();if(id==="pool"){try{PoolMap.refresh()}catch(e){}}if(id==="current")renderCurrent(T0());if(id==="today")renderToday();updateBnav()}
+const ICN={today:"clock",now:"cal",pool:"pin",tix:"card",storm:"note",yen:"yen",pack:"chk",map:"globe",past:"clock",future:"compass",current:"nav"};
 function renderDrawer(){const t=T0(),nm=t?(t.short||t.title):"",b=(id,c)=>`<button class="${c} ${cur===id?"on":""}" data-t="${id}"><i class="ic ic-${ICN[id]}"></i>${LB[id]}</button>`;
  $("#drawer").innerHTML=`<p class="eyebrow brand" data-a="home">TripTick</p><h2 class="brand" data-a="home">歷歷</h2><button data-t="current" class="${cur==="current"?"on":""}"><i class="ic ic-nav"></i>當前行程</button><p class="grp"><i class="ic ic-pin"></i>當前旅程　${t?esc(nm):"（目前沒有）"}</p>${t?SUB.map(i=>b(i,"sub")).join(""):""}<p class="grp">其他旅程</p>${["map","past","future"].map(i=>b(i,"")).join("")}${drawerExtra()}<p class="meta" style="margin-top:auto">資料儲存在你的 Google 帳戶。</p>`;
  $("#crumb").textContent=cur==="current"?"當前行程":(SUB.includes(cur)?`${t?nm:"當前旅程"} › ${LB[cur]}`:LB[cur])}
 
 /* ===== 行程內底部導覽（5 格）===== */
-const BN_PAGES=["today","now","tix","storm","yen","pack","more"];
-const BN_GROUP={storm:"more",yen:"more",pack:"more"};
+const BN_PAGES=["today","now","tix","storm","yen","pack","pool","more"];
+const BN_GROUP={storm:"more",yen:"more",pack:"more",pool:"more"};
 function updateBnav(){
   document.body.classList.toggle("has-bnav",BN_PAGES.includes(cur));
   const g=BN_GROUP[cur]||cur;
@@ -1075,7 +1074,7 @@ function pickTrip(L){L=L||tripList();if(!L.length)return null;const now=Date.now
  const cur0=L.find(x=>x.status==="now");if(cur0)return cur0;
  near.sort((a,b)=>a.d-b.d);const live=near.find(x=>x.t.status!=="past");return(live||near[0]||{}).t||L.find(x=>x.status!=="past")||L[0]}
 function viewTrip(){const L=tripList();if(VIEW_ID){const f=L.find(x=>x.id===VIEW_ID);if(f)return f;VIEW_ID=null}return pickTrip(L)}
-function TV(){return RV||(cur==="now"&&viewTrip())||T0()}
+function TV(){return RV||((cur==="now"||cur==="pool")&&viewTrip())||T0()}
 function LT(){return viewTrip()||T0()}
 function reducedMotion(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}}
 function bounce(el){if(!el||reducedMotion())return;el.classList.remove("jelly");void el.offsetWidth;el.classList.add("jelly");setTimeout(()=>el.classList.remove("jelly"),460)}
@@ -1577,8 +1576,6 @@ function deletePoolPlace(t,id){
   return true
 }
 function poolPlaced(t){const m={};getDays(t).forEach(d=>(d.items||[]).forEach(x=>{if(x&&x.pid&&!m[x.pid])m[x.pid]=d.k||""}));return m}
-function poolSeg(){return`<div class="seg"><button data-a="nowtab" data-v="daily" class="${nowTab==="daily"?"on":""}" aria-pressed="${nowTab==="daily"}">每日</button><button data-a="nowtab" data-v="pool" class="${nowTab==="pool"?"on":""}" aria-pressed="${nowTab==="pool"}">口袋名單</button></div>`}
-function applyNowTab(){const el=$("#t-now");if(!el)return;el.dataset.nt=nowTab;el.querySelectorAll('.seg button[data-a="nowtab"]').forEach(x=>{const on=x.dataset.v===nowTab;x.classList.toggle("on",on);x.setAttribute("aria-pressed",String(on))});if(nowTab==="daily"){try{MiniMap.refresh()}catch(e){}}else{try{PoolMap.refresh()}catch(e){}}}
 function poolHTML(t){
   const L=poolOf(t),can=!!me&&(t.members||[]).includes(me.uid);
   const addBtn='<button class="pill" data-a="poolnew">新增地點</button>';
@@ -1589,9 +1586,9 @@ function poolHTML(t){
   const star='<svg class="ix pt-star" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="#4F7A5A" stroke="#4F7A5A" stroke-width="1.75" stroke-linejoin="round"><path d="M12 3.5l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.9 6.7 19.6l1-5.8L3.5 9.7l5.9-.9L12 3.5z"/></svg>';
   const xs='<svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   const row=p=>{const q=encodeURIComponent((p.q||p.name||"")+(t.country?" "+t.country:""));
-    return`<div class="pt-row"><div class="pt-main"><div class="pt-name">${p.must?star:""}<span>${esc(p.name)}</span></div>${p.note?`<p class="pt-note">${esc(p.note)}</p>`:""}${placed[p.id]?`<span class="pt-tag">已排 ${esc(placed[p.id])}</span>`:""}${p.lat==null?`<span class="pt-tag">未標到地圖</span>`:""}</div><button class="cb" data-a="poolplan" data-v="${esc(p.id)}">排入</button>${p.lat==null?`<a class="cb" href="https://maps.google.com/?q=${q}" target="_blank" rel="noopener">開啟地圖</a>`:""}<button class="x ed" data-a="pooledit" data-v="${esc(p.id)}" aria-label="編輯"><i class=i-edit></i></button><button class="x ed" data-a="pooldel" data-v="${esc(p.id)}" aria-label="刪除">${xs}</button></div>`};
+    return`<div class="pt-row" data-pid="${esc(p.id)}"><div class="pt-main"><div class="pt-name">${p.must?star:""}<span>${esc(p.name)}</span></div>${p.note?`<p class="pt-note">${esc(p.note)}</p>`:""}${placed[p.id]?`<span class="pt-tag">已排 ${esc(placed[p.id])}</span>`:""}${p.lat==null?`<span class="pt-tag">未標到地圖</span>`:""}</div><button class="cb" data-a="poolplan" data-v="${esc(p.id)}">排入</button>${p.lat==null?`<a class="cb" href="https://maps.google.com/?q=${q}" target="_blank" rel="noopener">開啟地圖</a>`:""}<button class="x ed" data-a="pooledit" data-v="${esc(p.id)}" aria-label="編輯"><i class=i-edit></i></button><button class="x ed" data-a="pooldel" data-v="${esc(p.id)}" aria-label="刪除">${xs}</button></div>`};
   const head=g=>(g.k||groups.length>1)?`<div class="me-day">${esc(g.k||"未分區")}</div>`:"";
-  return`<div class="pt-pool">${can?`<div class="pills pt-top">${addBtn}</div>`:""}${poolMapHTML(t)}${groups.map(g=>head(g)+g.items.slice().sort((a,b)=>(b.must?1:0)-(a.must?1:0)).map(row).join("")).join("")}</div>`
+  return`<div class="pt-pool">${can?`<div class="pills pt-top">${addBtn}</div>`:""}${poolMapHTML(t)}${groups.map(g=>head(g)+'<div class="glass pt-card">'+g.items.slice().sort((a,b)=>(b.must?1:0)-(a.must?1:0)).map(row).join("")+'</div>').join("")}</div>`
 }
 // ===== /口袋名單 =====
 function poolPlanForm(t,id){
@@ -1622,21 +1619,23 @@ function poolPlanSave(t){
   toast("已排入 "+(day.k||"D"+(di+1)))
 }
 // ===== 口袋名單地圖 =====
-const PoolMap={m:null,ll:[],sel:null,tok:0,
+const PoolMap={m:null,ll:[],sel:null,tok:0,ks:{},
 render(t){try{if(this.m)this.m.remove()}catch(e){}this.m=null;const el=document.getElementById("poolmap");if(!el||typeof L==="undefined")return;
  const pts=poolOf(t).filter(p=>p&&p.lat!=null),placed=poolPlaced(t);
  this.m=L.map("poolmap",{scrollWheelZoom:false}).setView([30,120],2);
  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap",maxZoom:18}).addTo(this.m);
- this.sel=null;this.m.on("popupclose",()=>{this.sel=null});
+ this.sel=null;this.ks={};this.m.on("popupclose",()=>{this.sel=null;this.hl(null)});
  const ll=[];
  pts.forEach(p=>{const on=!!placed[p.id];ll.push([p.lat,p.lng]);
   const d=document.createElement("div");d.style.cssText="font-size:13px;line-height:1.5;color:var(--text)";const h=document.createElement("b");h.style.fontSize="16px";h.textContent=p.name;d.appendChild(h);const meta=[p.must?"必去":"",on?"已排 "+placed[p.id]:"",p.area||""].filter(Boolean).join("・");if(meta){const m=document.createElement("div");m.style.color="var(--text-2)";m.textContent=meta;d.appendChild(m)}if(p.note){const n=document.createElement("div");n.style.cssText="margin-top:4px;white-space:pre-wrap";n.textContent=p.note;d.appendChild(n)}const nv=document.createElement("a");nv.className="pill gl mini";nv.target="_blank";nv.rel="noopener";nv.textContent="導航";nv.style.cssText="display:inline-flex;align-items:center;justify-content:center;margin-top:8px;color:var(--text);text-decoration:none";nv.href="https://www.google.com/maps/dir/?api=1&destination="+p.lat+","+p.lng+"&travelmode=walking";d.appendChild(nv);const pb=document.createElement("button");pb.type="button";pb.className="pill gl mini";pb.textContent="排入";pb.style.cssText="display:inline-flex;align-items:center;justify-content:center;margin:8px 0 0 8px;color:var(--text)";pb.addEventListener("click",()=>{const c=TV();if(c)poolPlanForm(c,p.id)});d.appendChild(pb);
   const mk=L.circleMarker([p.lat,p.lng],{radius:p.must?9:7,color:on?"#FFFFFF":"#FF7A00",weight:on?2:2.5,fillColor:"#FF7A00",fillOpacity:on?.9:0}).addTo(this.m);
-  mk.on("click",e=>{L.DomEvent.stopPropagation(e);if(this.sel===p.id){this.reset();return}
-   const tok=++this.tok,open=()=>{if(tok!==this.tok)return;L.popup({offset:[0,-4],maxWidth:240,autoPan:true,autoPanPadding:[20,20],closeOnClick:false}).setLatLng([p.lat,p.lng]).setContent(d).openOn(this.m);this.sel=p.id};
+  this.ks[p.id]=mk;mk.on("click",e=>{L.DomEvent.stopPropagation(e);if(this.sel===p.id){this.reset();return}
+   const tok=++this.tok,open=()=>{if(tok!==this.tok)return;L.popup({offset:[0,-4],maxWidth:240,autoPan:true,autoPanPadding:[20,20],closeOnClick:false}).setLatLng([p.lat,p.lng]).setContent(d).openOn(this.m);this.sel=p.id;this.hl(p.id)};
    if(this.m.getZoom()===14&&this.m.getCenter().distanceTo([p.lat,p.lng])<5)open();else{this.m.once("moveend",open);this.m.flyTo([p.lat,p.lng],14,{duration:.8})}})});
  this.ll=ll;this.refresh()},
-reset(){if(!this.m)return;this.tok++;this.m.closePopup();this.sel=null;if(this.ll.length)this.m.flyToBounds(this.ll,{padding:[30,30],maxZoom:14,duration:.8})},
+hl(id){document.querySelectorAll("#t-pool .pt-row").forEach(r=>r.classList.toggle("sel",!!id&&r.dataset.pid===id))},
+pick(id){const k=this.ks[id];if(!k)return;try{document.getElementById("poolmap").scrollIntoView({block:"nearest"})}catch(e){}k.fire("click")},
+reset(){if(!this.m)return;this.tok++;this.m.closePopup();this.sel=null;this.hl(null);if(this.ll.length)this.m.flyToBounds(this.ll,{padding:[30,30],maxZoom:14,duration:.8})},
 refresh(){setTimeout(()=>{try{if(!this.m)return;this.m.invalidateSize();if(this.ll.length)this.m.fitBounds(this.ll,{padding:[30,30],maxZoom:14})}catch(e){}},80)}};
 let poolMapOpen=true;
 function poolMapHTML(t){const ms=poolOf(t).filter(p=>p&&p.lat==null),miss=ms.length;
@@ -1658,6 +1657,7 @@ async function poolGeoAll(tid,quiet){if(poolGeoBusy){poolGeoAgain=true;return}po
 document.addEventListener("click",e=>{const b=e.target.closest('[data-a="poolgeo"],[data-a="georetry"]');if(!b)return;const t=TV();if(!t)return;
  if(b.dataset.a==="poolgeo")poolGeoAll(t.id,false);else{toast("重新查詢中…");geocodeAI(t.id)}});
 document.addEventListener("click",e=>{if(!e.target.closest('[data-a="poolmaptoggle"]'))return;poolMapOpen=!poolMapOpen;render()});
+document.addEventListener("click",e=>{const r=e.target.closest("#t-pool .pt-row");if(!r||e.target.closest("button,a"))return;try{PoolMap.pick(r.dataset.pid)}catch(err){}});
 document.addEventListener("click",e=>{if(!e.target.closest('[data-a="dmaptoggle"]'))return;dailyMapOpen=!dailyMapOpen;const b=document.getElementById("dmapbtn"),w=document.getElementById("ptdaily");if(b)b.textContent=dailyMapOpen?"收合地圖":"顯示地圖";if(w)w.classList.toggle("dmap-on",dailyMapOpen);if(dailyMapOpen)setTimeout(()=>{const t=TV();if(t){try{refreshDays(t)}catch(e){}try{drawMembers()}catch(e){}}},80)});
 // ===== /口袋名單地圖 =====
 window.QA_API = { toast, esc, getLocalDateStr, getTodayItems, T0: TV, addExpense, addMemoEntry, editMemoEntry, deleteMemoEntry, addPoolPlace, editPoolPlace, deletePoolPlace, poolAreas, canEdit:(t)=>!!me&&!!t&&(t.members||[]).includes(me.uid) };
