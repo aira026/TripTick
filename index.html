@@ -25,10 +25,10 @@
 </header>
 <aside class="drawer" id="drawer" aria-label="目錄"></aside><div class="scrim" id="scrim" data-a="menu"></div>
 <main>
-<section id="t-today" class="panel" aria-label="今天"></section>
 <section id="t-more" class="panel" aria-label="更多"><div class="more-grid">
 <button data-a="m" data-v="sos" class="more-card sos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6z"/><path d="M12 9v6M9 12h6"/></svg><span>緊急</span></button>
 <button data-bn="pool" class="more-card"><i class="ic ic-pin"></i><span>口袋清單</span></button>
+<button data-bn="tix" class="more-card"><i class="ic ic-card"></i><span>票券</span></button>
 <button data-a="m" data-v="book" class="more-card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16l-6-4-6 4z"/></svg><span>Booking</span></button>
 <button data-a="members" class="more-card"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.3 2.9-5 5.5-5s4.9 1.7 5.5 5"/><circle cx="17" cy="9.5" r="2.4"/><path d="M16.2 14.3c2.3.3 3.8 1.9 4.3 4.2"/></svg><span>成員</span></button>
 <button data-a="m" data-v="diet" class="more-card"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3v6a2 2 0 0 0 4 0V3M8.5 11v10"/><path d="M17 3c-2 1.6-3 4-3 7h3v11"/></svg><span>飲食卡</span></button>
@@ -48,10 +48,8 @@
 <section id="t-future" class="panel" aria-label="未來清單"><div class="pills addrow"><button class="pill" data-a="add" data-v="future"><span class="dot">＋</span>新增旅程</button></div><div class="grid" id="l-future"></div></section>
 </main>
 <nav class="bnav" id="bnav" aria-label="行程導覽">
-<button data-bn="today"><i class="ic ic-nav"></i>今天</button>
 <button data-bn="now"><i class="ic ic-cal"></i>行程</button>
 <button data-bn="add" class="bn-add" aria-label="新增"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
-<button data-bn="tix"><i class="ic ic-card"></i>票券</button>
 <button data-bn="more"><i class="ic ic-note"></i>更多</button>
 </nav>
 <div id="modal" class="modal"><div class="sheet glass" id="sheet"></div></div><div id="toast" class="toast"></div>

@@ -499,7 +499,8 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
   height:calc(var(--photo-h) + var(--body-h));
   scroll-snap-align:center;
   scroll-snap-stop:always;
-  background:var(--card);
+  background:transparent;
+  border:1px solid var(--card-border);
   border-radius:20px;
   overflow:hidden;
   box-shadow:0 10px 30px rgba(0,0,0,0.12);
@@ -521,7 +522,9 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
   height:var(--body-h);
   display:flex;
   flex-direction:column;
-  background:var(--card-strong);
+  background:var(--card);
+  -webkit-backdrop-filter:var(--jelly-blur);
+  backdrop-filter:var(--jelly-blur);
   z-index:2;
   transition:height .45s cubic-bezier(.25,1,.5,1);
 }
@@ -561,7 +564,7 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
 .pc-cities{flex:0 1 auto;max-width:40%;margin-top:16px;font-size:.78rem;color:var(--mut);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* 底部操作按鈕：整齊等寬排列 */
-.pc-act{flex:none;display:flex;gap:8px;margin-top:auto;padding:10px 14px 14px;background:var(--card-strong)}
+.pc-act{flex:none;display:flex;gap:8px;margin-top:auto;padding:10px 14px 14px;background:transparent}
 .pc-act .pill{flex:1;min-height:40px;padding:0 6px;font-size:.8rem;border-radius:999px;white-space:nowrap}
 .pc-act .pill:active{transform:scale(.96)}
 .fm .pc-up{margin-top:6px}
@@ -784,7 +787,7 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
 .page-btn svg{width:20px;height:20px}
 .page-btn.pg-prev,.page-btn.pg-next,.page-btn.pg-auto{width:48px;height:48px}
 .page-btn.pg-prev svg,.page-btn.pg-next svg,.page-btn.pg-auto svg{width:20px;height:20px}
-.page-btn.pg-auto{border-color:var(--line);color:var(--accent)}
+.page-btn.pg-auto{border-color:var(--line);color:var(--text)}
 .page-btn:active{transform:scale(.92)}
 .page-btn.active{
   border-color:var(--accent);
@@ -819,7 +822,6 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
 .shortcut-card:active{transform:scale(.95);border-color:var(--accent);color:var(--accent)}
 
 /* 當前行程頁面無底部懸浮導覽列 */
-body.has-bnav #t-today{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 
 /* 行程內底部導覽（DESIGN.md v2） */
 .bnav{display:none;position:fixed;left:16px;right:16px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:3000;max-width:688px;margin:0 auto;padding:8px;gap:0;border-radius:28px;background:var(--card);-webkit-backdrop-filter:var(--jelly-blur);backdrop-filter:var(--jelly-blur);border:1px solid var(--card-border);box-shadow:var(--jelly-shadow)}
@@ -847,13 +849,13 @@ body[data-pg="home"] .top>div{visibility:hidden}
 @keyframes breath{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.04);opacity:1}}
 @media(prefers-reduced-motion:reduce){.home-btn.breath{animation:none}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.home-btn,.menu,.who{background:var(--danger-bg)}}
-.today-h{font-size:1.3rem;font-weight:600;color:var(--ink);margin-bottom:6px}
 .more-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-.more-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:96px;border-radius:28px;border:1px solid var(--card-border);background:var(--card-strong);-webkit-backdrop-filter:var(--jelly-blur);backdrop-filter:var(--jelly-blur);box-shadow:var(--jelly-shadow);color:var(--ink);font:inherit;font-weight:600;text-align:center;cursor:pointer}
+.more-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:96px;border-radius:28px;border:1px solid var(--card-border);background:var(--card);-webkit-backdrop-filter:var(--jelly-blur);backdrop-filter:var(--jelly-blur);box-shadow:var(--jelly-shadow);color:var(--ink);font:inherit;font-weight:600;text-align:center;cursor:pointer}
 .more-card .ic{width:22px;height:22px;margin:0}
 .more-card:active{opacity:.85}
 .more-card svg{display:block;flex:none;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .more-card.sos svg{stroke:#C2402A}
+.more-card.sos{grid-column:1/-1;flex-direction:row;gap:12px;min-height:64px}
 
 /* ===== patch-css: 備忘錄頁、緊急頁、白底圓膠囊按鈕 ===== */
 
@@ -941,14 +943,6 @@ body[data-pg="home"] .top>div{visibility:hidden}
 .it.stay .act .cb{background:transparent;color:#7a7a7a}
 .it.stay .i-edit{background:#6a6a6a}
 
-/* patch-today1: 今天頁（沒排行程） */
-#t-today .td-head{margin:8px 0 16px}
-#t-today .td-title{font-family:Georgia,"Noto Serif TC","Songti TC",serif;font-size:24px;font-weight:600;color:var(--text);margin:0}
-#t-today .td-sub{font-size:13px;color:var(--text-2);margin:4px 0 0}
-#t-today .td-ask{font-size:16px;color:var(--text);margin:0 0 8px}
-#t-today .td-empty p{font-size:16px;color:var(--text);margin:0 0 16px}
-#t-today .td-go{flex:0 0 auto;min-height:44px;padding:0 16px;border-radius:999px;background:transparent;border:1px solid rgba(244,248,242,.12);color:var(--text);font-size:13px;font-weight:500;cursor:pointer}
-#t-today .pt-row{padding:8px 0}
 
 /* patch-today2: 今天頁小幅減法（按鈕與版面維持原樣） */
 .trip-info-header h2{font-family:Georgia,"Noto Serif TC","Songti TC",serif;font-size:24px;font-weight:600;color:var(--text)}
@@ -957,7 +951,6 @@ body[data-pg="home"] .top>div{visibility:hidden}
 .trip-card .label{font-size:13px;letter-spacing:0;text-transform:none;color:var(--text-2)}
 .trip-card.is-now .label{color:var(--text)}
 .trip-card.is-now .label::before{content:"";display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:var(--warm);vertical-align:middle}
-.bnav button.on:not(.bn-add)::after{content:"";position:absolute;left:50%;bottom:2px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--accent)}
 
 /* ===== patch-css: 提示條去黑底（toast／undo／updbar／offbar） ===== */
 .toast,#undo,#updbar{background:var(--card-strong);color:var(--text);border:1px solid var(--card-border);-webkit-backdrop-filter:var(--jelly-blur);backdrop-filter:var(--jelly-blur);box-shadow:var(--jelly-shadow)}
