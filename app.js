@@ -854,7 +854,7 @@ document.addEventListener("input",e=>{if(e.target.id==="jpy"||e.target.id==="rat
 document.addEventListener("change",e=>{const c=e.target.closest("input[data-k]"),t=T0();if(!c||!t)return;const P=plist(t);P[c.dataset.k][+c.dataset.i].d=c.checked?1:0;savePl(t,P);c.closest(".ck").classList.toggle("done",c.checked)});
 
 document.addEventListener("change",e=>{const i=e.target.closest("input[data-b]"),t=T0();if(!i||!t)return;const L=bkList(t);L[+i.dataset.i][i.dataset.b]=i.value.trim();saveBk(t,L)});
-function go(id){setEdit(false);cur=id;document.body.dataset.pg=id;document.body.classList.remove("dr");document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("on",p.id==="t-"+id));renderDrawer();window.scrollTo({top:0});if(id==="map")MapView.refresh();if(id==="now")MiniMap.refresh();if(id==="pool"){try{PoolMap.refresh()}catch(e){}}if(id==="today")renderToday();if(id==="home")renderHome();homeVid(id==="home");updateBnav()}
+function go(id){setEdit(false);cur=id;document.body.dataset.pg=id;document.body.classList.remove("dr");document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("on",p.id==="t-"+id));renderDrawer();window.scrollTo({top:0});if(id==="map")MapView.refresh();if(id==="now")MiniMap.refresh();if(id==="pool"){try{PoolMap.refresh()}catch(e){}}if(id==="today")renderToday();if(id==="home")renderHome();homeVid(true);updateBnav()}
 const ICN={today:"clock",now:"cal",pool:"pin",tix:"card",storm:"note",yen:"yen",pack:"chk",map:"globe",past:"clock",future:"compass"};
 function renderDrawer(){const t=T0(),nm=t?(t.short||t.title):"",b=(id,c)=>`<button class="${c} ${cur===id?"on":""}" data-t="${id}"><i class="ic ic-${ICN[id]}"></i>${LB[id]}</button>`;
  $("#drawer").innerHTML=`<p class="eyebrow brand" data-a="home">TripTick</p><h2 class="brand" data-a="home">歷歷</h2><button data-t="home" class="${cur==="home"?"on":""}"><i class="ic ic-nav"></i>首頁</button><p class="grp"><i class="ic ic-pin"></i>當前旅程　${t?esc(nm):"（目前沒有）"}</p>${t?SUB.map(i=>b(i,"sub")).join(""):""}<p class="grp">其他旅程</p>${["map","past","future"].map(i=>b(i,"")).join("")}${drawerExtra()}<p class="meta" style="margin-top:auto">資料儲存在你的 Google 帳戶。</p>`;
@@ -879,7 +879,7 @@ function renderHome(){const el=$("#home-act");if(!el)return;const has=tripList()
   el.innerHTML=has?'<button type="button" class="home-btn" data-a="gotnow">進入行程</button>':'<button type="button" class="home-btn breath" data-a="add" data-v="now">來趟旅行吧！</button>'}
 /* 影片：離開首頁就暫停；減少動態或省電模式（play 被擋）只顯示 poster */
 function homeVid(on){const v=$("#home-vid");if(!v)return;if(!on||reducedMotion()){try{v.pause()}catch(e){}return}try{const p=v.play();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
-document.body.dataset.pg=cur;updateBnav();homeVid(cur==="home");renderHome();
+document.body.dataset.pg=cur;updateBnav();homeVid(true);renderHome();
 // 導覽下滑收起：向下捲超過 40px 給 body 加 bnav-hide 讓導覽 translateY 滑出畫面；
 // 向上捲或回到頂部移除，過場 200ms；passive scroll 監聽，位移小於 8px 不觸發；
 // 彈層（modal / 抽屜 dr）開啟時不受此邏輯影響。
@@ -933,7 +933,7 @@ function renderToday(){
 /* ---- auth / invite / template / migration ---- */
 const emptyNow0=()=>!FB_OK?`<div class="glass blk"><p>${FB_LOAD?"尚未設定 Firebase。請依說明填入 firebase-config.js 後重新整理。":"目前離線，且這台裝置還沒有行程快照。請連線並登入一次，之後就能離線查看。"}</p></div>`:me?'<div class="glass blk"><p>無當前行程，請新增行程或輸入邀請碼</p><div class="pills"><button class="pill" data-a="add" data-v="now"><span class="dot">＋</span>新增行程</button><button class="pill gl" data-a="join">輸入邀請碼</button><button class="pill gl" data-a="tpl">匯入範例：北海道</button></div></div>':'<div class="glass blk"><p>無當前行程，請登入後新增行程或輸入邀請碼</p><div class="pills"><button class="pill" data-a="auth">Google 一鍵登入</button></div></div>';
 const guide=()=>me&&!TRIPS.length?'<div class="glass blk guide"><b>快速開始</b><ol><li>新增行程，或向朋友索取邀請碼加入。</li><li>在行程裡新增每日景點，並填寫「地點」，地圖就會自動標出位置。</li><li>出發前在有網路時登入並載入一次，之後離線也能查看。</li></ol></div>':"";
-const emptyNow=()=>emptyNow0()+guide()+(me&&foodSnap()?'<div class="pills" style="margin-top:10px"><button class="pill gl" data-a="m" data-v="diet">飲食卡（離線快照）</button></div>':"");
+const emptyNow=()=>emptyNow0()+guide();
 async function login(){const p=new GoogleAuthProvider();p.setCustomParameters({prompt:"select_account"});
  try{await signInWithPopup(auth,p);return true}
  catch(e){const c=(e&&e.code)||"";
