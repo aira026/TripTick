@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="story-share.css"></head>
 <body>
 <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+<div class="home-bg" aria-hidden="true"><video id="home-vid" muted playsinline autoplay loop preload="metadata" poster="home-poster.jpg"><source src="homepage.mp4" type="video/mp4"></video></div>
 <header class="top">
 <button class="menu" data-a="menu" aria-label="開啟選單" aria-controls="drawer"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
 <div><a href="./" class="brand" data-a="home" aria-label="回到首頁"><span class="eyebrow">TripTick</span><h1>歷歷</h1></a><p class="crumb" id="crumb"></p></div><button class="who" id="who" data-a="auth" aria-label="登入／登出">登入</button>
@@ -38,7 +39,7 @@
 </div></section>
 <section id="t-pool" class="panel" aria-label="口袋清單"></section>
 <section id="t-now" class="panel" aria-label="行程總覽"></section>
-<section id="t-current" class="panel on" aria-label="當前行程"></section>
+<section id="t-home" class="panel on" aria-label="首頁"><div class="home"><div class="home-logo"><img src="triptick.png" alt="TripTick 歷歷" decoding="async"></div><div class="home-act" id="home-act"></div></div></section>
 <section id="t-tix" class="panel" aria-label="票券與預約"></section>
 <section id="t-storm" class="panel" aria-label="備忘錄"></section>
 <section id="t-yen" class="panel" aria-label="匯率與帳本"></section>

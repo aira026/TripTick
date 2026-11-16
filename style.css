@@ -829,9 +829,7 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
 .shortcut-card:active{transform:scale(.95);border-color:var(--accent);color:var(--accent)}
 
 /* 當前行程頁面無底部懸浮導覽列 */
-#t-current{padding-bottom:0}
-#t-current .panel{padding-bottom:0}
-body.has-bnav #t-today,body.has-bnav #t-current{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+body.has-bnav #t-today{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 
 /* 行程內底部導覽（DESIGN.md v2） */
 .bnav{display:none;position:fixed;left:16px;right:16px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:3000;max-width:688px;margin:0 auto;padding:8px;gap:0;border-radius:28px;background:var(--card);-webkit-backdrop-filter:var(--jelly-blur);backdrop-filter:var(--jelly-blur);border:1px solid var(--card-border);box-shadow:var(--jelly-shadow)}
@@ -844,6 +842,24 @@ body.has-bnav .bnav[hidden]{display:none}
 .bnav button.bn-add{flex:0 0 56px;width:56px;height:56px;min-height:56px;margin:0 8px;background:#fff;border:1px solid var(--line);color:var(--text)}
 .bnav{transition:transform .2s ease}
 body.bnav-hide .bnav{transform:translateY(130%)}
+/* ===== 首頁（DESIGN v4.1 批次 3）：唯一暗底，影片背景＋遮罩＋深色玻璃 ===== */
+.home-bg{display:none;position:fixed;inset:0;z-index:-1;background:var(--danger-bg);overflow:hidden}
+.home-bg video{display:block;width:100%;height:100%;object-fit:cover}
+.home-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(20,32,26,.25),rgba(20,32,26,.45))}
+body[data-pg="home"] .home-bg{display:block}
+body[data-pg="home"] .top>div{visibility:hidden}
+#t-home{padding-top:0}
+.home{display:flex;flex-direction:column;min-height:calc(100svh - 96px - env(safe-area-inset-top))}
+.home-logo{flex:1;display:flex;align-items:center;justify-content:center}
+.home-logo img{display:block;width:min(78vw,360px);height:auto}
+.home-act{display:flex;justify-content:center;padding-bottom:calc(104px + env(safe-area-inset-bottom))}
+.home-btn{min-height:48px;padding:0 32px;border:1px solid var(--card-dark-border);border-radius:999px;background:var(--card-dark);-webkit-backdrop-filter:var(--jelly-blur);backdrop-filter:var(--jelly-blur);color:#F4F8F2;font:inherit;font-size:16px;font-weight:600;cursor:pointer;box-shadow:var(--jelly-shadow)}
+.home-btn.breath{animation:breath 3.2s ease-in-out infinite}
+@keyframes breath{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.04);opacity:1}}
+@media(prefers-reduced-motion:reduce){.home-btn.breath{animation:none}}
+body[data-pg="home"] .bnav{background:var(--card-dark);border-color:var(--card-dark-border)}
+body[data-pg="home"] .bnav button:not(.bn-add){color:rgba(244,248,242,.72)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){body[data-pg="home"] .bnav,.home-btn{background:var(--danger-bg)}}
 .today-h{font-size:1.3rem;font-weight:600;color:var(--ink);margin-bottom:6px}
 .more-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
 .more-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:96px;border-radius:28px;border:1px solid var(--card-border);background:var(--card-strong);-webkit-backdrop-filter:var(--jelly-blur);backdrop-filter:var(--jelly-blur);box-shadow:var(--jelly-shadow);color:var(--ink);font:inherit;font-weight:600;text-align:center;cursor:pointer}
