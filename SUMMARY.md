@@ -1,7 +1,7 @@
-# 歷歷 TripTick 專案摘要卡 v13
+# 歷歷 TripTick 專案摘要卡 v11
 
-更新日期：2026/11/15
-狀態：「整體 UIUX 改版」（森林綠＋淺色內頁＋果凍／水玻璃卡，橘色全面退場）。規格以 DESIGN.md v4 為準。批次 0（色彩 token）已 commit；批次 1（行程頁水卡）腳本 batch1.cjs 已跑過並初步實測；實測回報後補了修正腳本 batch1b.cjs（見「批次 1 修正」），等使用者跑完再 commit。下一步：批次 2 口袋清單搬家。
+更新日期：2026/11/11
+狀態：口袋名單完整、每日頁／行程頁減法改版、「今天」頁（沒排行程時挑口袋名單）完成並實測通過（分支 feature/nav，本機領先 origin，尚未 push）。下一步見「下一步」。
 
 ## 一句話
 旅伴再問「下一站去哪」，打開歷歷就知道。
@@ -22,7 +22,7 @@
 - 頁面切換：index.html 的 `<main>` 內多個 `<section class="panel" id="t-xxx">`，
   `go(id)` 切換 `.on`；事件用 `data-t`（切頁）、`data-a`（動作）代理，handler 內 `a=b.dataset.a`、`v=b.dataset.v`
 - 資料：trips[].days[].items[]；day.date 為 "1/15（五）"（無年份），item 欄位 t/h/d/type/q/more，另有 lat/lng（定位成功才有）
-- 現有 trip.status:"now" 為手動欄位（statusOf＝t.st[uid]），與決策 1 衝突（尚未移除）；T0() 仍靠它找當前行程。**行程頁（#t-now）自批次 1 起改顯示 viewTrip()，可能與 T0() 不同趟，見「2026/11/15 批次 1」**
+- 現有 trip.status:"now" 為手動欄位，與決策 1 衝突（尚未移除）；T0() 仍靠它找當前行程
 - 定位（geocoding）：app.js 的 geo(q) 打 OpenStreetMap Nominatim（免金鑰、約 1 次/秒）。map.js 只負責畫點，不查座標
 
 ## 本機開發
@@ -55,12 +55,15 @@
 漢堡選單（四類，尚未實作）
 我的旅程（依日期分進行中／即將出發／規劃中）／回憶（歷史旅程，頂部全球足跡）／建立（新增行程〔手動／AI〕、探索與範例）／帳號
 
-## 設計規則：以 DESIGN.md v4 為準（取代 v2／v3 的色彩與背景）
-- 森林綠 --accent #4F7A5A、淺色內頁 --bg #E6EDE3、果凍／水玻璃卡（.glass／.card 同一種樣式）、橘色與粉色漸層全面禁用
-- v3 的字體（24 襯線／16／13）、間距（8／16／24）、元件骨架、清單列規則沿用
-- 刻意保留深色：#focus（--danger-bg #1E2B24）、.story-stage；首頁影片頁用深色玻璃（--card-dark）
-- --warm #F2B544 僅限小圓點與「現在」標記；--warn 只給緊急與重要班次
-- 不可巢狀 backdrop-filter；需有 @supports 與 prefers-reduced-motion 備案
+## 已定案：設計規則 v2（詳見 DESIGN.md）
+- 背景：柔和暖色漸層，禁止模糊色塊與動畫
+- 卡片：半透明奶油白玻璃＋輕模糊＋1px 白邊，大卡圓角 28
+- 按鈕：白底圓膠囊＋淺邊，圖示可帶橘；不做橘底實心按鈕
+- 橘 #FF7A00 只用於路線、打勾、狀態點、圖示；文字 #3A2E26／#7A6A5C；警示 #C2402A
+- 字體 3 種：24 襯線／16／13；間距 8／16／24；點擊區 ≥44
+- 圖示：一套 SVG 線條，粗細 1.75、大小 22，不用 emoji
+- 底部導覽：玻璃浮條，目前頁深棕粗字＋橘色小圓點
+- v3 新增（2026/11/11）：清單列不用卡片；特殊列（住宿／重要班次）用淡底或色線＋小標籤；工具列用圖示＋13 字、無底色；次要按鈕用透明外框膠囊；頁面不留大面積深色；同一頁避免多顆長得一樣的膠囊按鈕（要有主次）
 
 ## 進度
 ### 前面輪次（已完成）
@@ -106,39 +109,7 @@
 - 有行程的今天頁（renderCurrent）只做文字層級小改：刪掉重複的「D1 現在時間」列、標題襯線 24、時間深棕 16 粗、「現在」標籤前加橘點、底部導覽目前頁加橘點。**導航圓鈕、上一站／回到當下／下一站三顆圓鈕與卡片位置刻意維持原樣**（試過底部操作列與拿掉按鈕，使用者實測覺得更差，已還原）。排版是否符合單手／戴手套，等手機實測截圖後再逐項調，不一次大改
 - 注意：renderCurrent 同時給 #t-today 與 #t-current 用
 
-### 2026/11/13 批次 0：色彩 token（腳本 batch0.cjs，已在副本試跑通過，使用者尚未實測）
-- :root 換成 v4 token，另有 --line（淡邊）、--jelly-blur、--jelly-shadow；舊變數保留為「相容別名」（--ink／--tx／--mut／--gl／--sh／--red／--aurora／--ice），因為 welcome.css、quick-add.js、story-share.css 還在用，待那些檔案改版再移除
-- .aurora 改為固定不動的三顆色塊，位置由 go() 設定的 body[data-pg] 決定（預設左上＝行程頁；pool＝中；more＝右下）
-- .glass／.card 統一果凍樣式；.glass .glass 關掉內層 backdrop-filter；@supports 備案用 --card-strong
-- 已改套 token 的容器：.sheet、.drawer、.bnav、.more-card（--card-strong）、.dayhd、.tile、.shortcut-card、.toast／#undo／#updbar、#offbar、#reqbar、.live
-- 橘／粉清除：.dot、.tc .ph、.ov::after（整條刪）、.pdot、.lvnav、.day-badge、.page-btn、.shortcut-card hover、.drawer sub.on 等；.ldot、現在標籤圓點、住宿標籤圓點改 --warm；打勾改 --accent
-- app.js：go() 加 document.body.dataset.pg=id；星星與口袋地圖圓點 #FF7A00 → #4F7A5A（6 處）；內嵌文字色改 var(--text)／var(--text-2)
-- map.js：新增 MAP_PIN（讀 --pin，備援 #FF7A00）；足跡圓點與兩處虛線路線（足跡、每日）都用它，路線維持橘色（綠色在山區看不清）
-- index.html：theme-color → #E6EDE3
-- 例外：地圖圖釘／圓圈維持橘色（--pin／--pin-sel；範圍＝.pdot、足跡圓點 MAP_PIN、口袋地圖圓圈、地圖虛線路線）；星星圖示維持綠色
-- sw.js 版號由使用者手動升
-- 驗證：Console 跑 getComputedStyle(document.documentElement).getPropertyValue("--accent") 應為 #4F7A5A；每日地圖橘色路線與圖釘是否清楚（綠色路線在山區看不清，已改回橘色）
-
-### 2026/11/15 批次 1：行程頁水卡（腳本 batch1.cjs，已在副本試跑通過；使用者尚未實測）
-- 結構：`#t-now` ＝ bar(1,vt)（編輯模式列，原樣）＋ `.nowrow`〔水卡 `#nowcard`（.glass）＋ 切換鈕 `.nc-sw`（沿用 .page-btn.pg-auto，重整 SVG）〕＋ poolSeg()＋poolHTML(t)（口袋名單原樣，仍在卡片下方）
-- 水卡內：`#live.nc-top`（liveHTML，點擊展開）＋ `.nc-more`（grid-template-rows 0fr→1fr，380ms；卡片圓角 28→36 同步過渡，變數 --nc-r）。展開區 ＝ 國旗國家＋標題（24 襯線）＋起訖日期＋`#cd` 倒數小標＋每日行程（#ptdaily：日分頁／當天清單／dtools／地圖）。收合時 `.nc-more` 加 inert
-- 地圖按鈕：只先出現「顯示地圖」；`.pt-daily.dmap-on` 才顯示 .locbar（分享位置／同行位置）
-- 五種狀態（liveHTML）：行程中（圓點 --warm 呼吸）／行程前（灰點 --text-2、「尚未開始」＋出發倒數 N 天＋預覽行程鈕）／行程後（灰點、標題靠右「非行程時段」＋「旅程已結束…」＋預覽行程鈕）／預覽模式（圓點 --warm 淡、上一個／下一個／回到即時；ldot.sim）／無行程（nowEmpty()：水卡「還沒有行程」＋主鈕「來趟旅行吧！」data-a="add" data-v="now"＋次要「輸入邀請碼」「匯入範例：北海道」＋原 guide()；未登入或 Firebase 未設定仍用舊 emptyNow()）。首頁在批次 3 才做，主鈕暫時開現有新增旅程彈窗
-- **顯示用行程（新）**：`tripList()`（visible() 依 startDate 排序，無日期排最後）、`pickTrip()`（今天在起訖內者優先，多趟取 status now 者否則最早；沒有則距今最近；都沒日期退回 T0() 或第一趟）、`viewTrip()`（手動切換 VIEW_ID 優先，失效自動退回 pickTrip；重新整理頁面會重置）。`tripNext`（data-a="tripnext"）循環切換，只改顯示、不寫資料；只有一趟時按鈕 disabled；切換時重畫、toast「顯示：行程名」、重設 LIVE 預覽
-- **TV()＝行程頁上下文的「當前行程」**：`RV || (cur==="now" && viewTrip()) || T0()`；RV 是 nowCard 渲染期間暫存的行程（讓 itm→dietWarn 吃對的行程）。**T0() 完全沒改**。已改用 TV() 的地方：主 click handler 的 t（addday／editday／delday／additem／edititem／delitem／saveitem／saveday／pool 系列／tplreset／archive…）、saveItem／itemForm／dayForm／saveDay、itm 的 dietWarn、pickPt、daymore change、print／afterprint、AI 小精靈（aiCtx／aiHTML／套用）、口袋地圖小卡「排入」、poolgeo、dmaptoggle、**QA_API.T0（＝TV，所以行程頁開記帳彈層時寫入顯示中的那一趟；其他頁仍是 T0）**
-- **LT()＝viewTrip()||T0()**：位置分享（syncLoc／updLocBar／drawMembers／people／askloc／locshare）跟著顯示中的行程；safeTick／syncReq／safetoggle／checkin／reqshare／reqskip（緊急與請求分享）仍用 T0()
-- bar(arch,t0)：新增選用的第二參數；「重設為範例」鈕改由 bar() 依顯示行程決定（bar0 沒動）；tplreset handler 加 templateId 檢查，避免誤蓋非範例行程
-- 編輯模式：開啟時若水卡收合，自動展開（否則看不到鉛筆與新增鈕）
-- tick()：#cd 倒數小標改吃 viewTrip()，放在展開區
-- 60 秒 refreshLive：若 pickTrip 結果與畫面上的 #nowcard[data-tid] 不同（跨日），整頁重畫 renderNow
-- 動畫：水波（.nc-rip 容器＋.ripple，白 radial-gradient .4→0，600ms，點卡片上半部才觸發）；果凍壓彈（.jelly，410ms：1→.97→1.02→1；用在展開、切換行程、卡內按鈕）。prefers-reduced-motion：JS 與 CSS 雙重關閉。@supports 備案沿用 .glass 規則（--card-strong）。卡內 .days button／.dayhd 關閉 backdrop-filter，避免巢狀
-- 已刪舊規則（同一次改動）：.hero／.hero small／.hero h2／.hero p／.hero .cdp／.hero .pills／.hero .pill.lt、.glass.dark.hero、.glass.dark（列印）、.live、.glass.live、.lvh、.simtag、.lvoff／.lvoff .meta、#live:has(.lvoff)（兩條）、.lvctl（含 button 與 disabled）、舊 .lvnav／.lvrow／.lvst 與舊 .ldot 區塊（整段改寫）。列印：隱藏 .nc-sw／.nc-rip，強制展開 .nc-more
-- 與規格的小出入／自行決定（請實測後告知要不要改）：展開後圓角 36（規格只說「圓角一起過渡」）；水波在淺色卡上很淡（照規格白 .4）；空狀態保留邀請碼與範例鈕（原功能）；行程後「非行程時段」標題靠右（照截圖）
-- **批次 1 修正（batch1b.cjs，2026/11/15 實測後）**：①切換鈕改放卡片右上角（.nc-sw 絕對定位於 #nowcard 內，標題列右側讓位 56px），不再並排；②pickTrip 改為「今天進行中（多趟取 status now）> 手動設為當前的行程（T0）> 最近的未歸檔 > 最近的任何」。原版只看日期，導致實測時麵包屑（T0＝台南）與水卡（日期最近＝韓國）不一致，歸檔／重設當前也換不掉。此規則與 DESIGN.md「沒有則選最近」略有出入，是依使用者實測需求改（手動「設為當前」仍是目前唯一的當前行程來源，決策 1 日期自動計算尚未做）；③「設為當前」「歸檔」成功後清除 VIEW_ID；④預覽圓點改實心 --warm（去掉 opacity .55）
-- 驗證：行程頁有行程時看到單張水卡；點卡展開／再點收合；切換鈕輪流顯示各行程（toast 顯示名稱）；Console 設 `window.__TODAY` 對行程頁無效（行程頁用手機時間）；改 `VIEW_ID` 無法從外部測，請直接按切換鈕
-
 ## 資料接口（QA_API，app.js 底部）
-（批次 1 起 QA_API.T0 ＝ TV()：行程頁回傳顯示中的行程，其他頁回傳 T0()）
 { toast, esc, getLocalDateStr, getTodayItems, T0, addExpense, addMemoEntry, editMemoEntry, deleteMemoEntry, addPoolPlace, editPoolPlace, deletePoolPlace, poolAreas, canEdit }
 - 寫入規則：先檢查登入與成員（_poolGuard）→ 建新物件（不可原地修改舊資料）→ patch（不 await）→ render() → 回傳 true/false
 - quick-add 送出一律現抓 T0()（onSnapshot 每次會換掉 t）
@@ -168,9 +139,8 @@
 - 不另做 popover 或 ⋯ 選單
 - 備忘一律走底部彈層寫入；備忘 handler 慣例：eb(k,i)（memoedit／memodel）、meb(id)（meedit／medel）
 - 口袋名單 handler：poolnew／pooledit／pooldel／poolplan／poolplanok／nowtab（主 switch），poolgeo／georetry／poolmaptoggle／dmaptoggle（獨立監聽）
-- CSS 慣例（v4 改版期間改了）：直接改或刪舊規則，不再用末尾 patch 區塊，被取代的 selector 同一次改動清掉；表單內 `.fm label{display:block}` 會蓋掉 .chk 的 flex，要用更高優先權；`#live:has(...)` 可依內容換外觀
-- setEdit(on)、bar0(arch) 是編輯模式與頂部按鈕列的核心，改周邊時不可動（批次 1 沒動；bar(arch,t0) 才是行程頁用的外層）
-- 行程頁相關的「現在是哪一趟」一律用 TV()（行程頁上下文）或 LT()（位置分享），不要在行程頁功能裡新寫 T0()
+- CSS 慣例：新樣式一律加在 style.css 末尾（後蓋前）；表單內 `.fm label{display:block}` 會蓋掉 .chk 的 flex，要用更高優先權；`#live:has(...)` 可依內容換外觀
+- setEdit(on)、bar0(arch) 是編輯模式與頂部按鈕列的核心，改周邊時不可動
 - 小地圖容器在隱藏分頁時尺寸為 0：切分頁後要 invalidateSize（refresh）
 
 ## 已知限制
@@ -180,9 +150,6 @@
 - 未登入提示文案目前是「無法編輯此行程」，之後改「請先登入」
 - 撥打 119 固定寫死
 - 分段切換狀態重新整理不保留
-- 行程頁手動切換的行程（VIEW_ID）與展開狀態（NOWOPEN）重新整理後重置
-- 行程頁每日行程收在水卡展開區；口袋名單分段（每日｜口袋名單）暫時留在卡片下方，批次 2 移除
-- 位置分享改跟顯示中的行程（LT）；若正在分享 A 行程、顯示切到 B，syncLoc 會停掉 A 的本機定位追蹤
 - 定位準確度（OpenStreetMap）：地址含縣市最準；只填名稱＋含糊區域（如「東區」）可能配到別的城市，且配錯無法偵測；台灣地名 OSM 多用「臺」。區域欄目前同時當定位線索，是已知取捨（改法見下一步）
 - 定位失敗的點會多等數秒；Nominatim 限速約 1 次/秒
 - 「今天」有行程的畫面：按鈕與版面維持舊樣式，尚未做手機單手實測
@@ -190,30 +157,20 @@
 - 舊備忘沒有日期，固定排在「未標日期」最下面
 - hokkaido.html 是靜態展示頁，與 app 無關
 
-## 改版待辦（依序，每批做完換新聊天室、更新本檔）
-### 批次 1：行程頁 — 已完成（見上方「2026/11/15 批次 1」），待使用者實測與 commit
-### 批次 2：口袋清單搬家
-- 現況綁定：nowTab 變數、poolSeg()（nowCard 回傳字串尾端，卡片下方）、applyNowTab()、#t-now[data-nt] CSS（`.pt-daily` 在水卡展開區內，data-nt="pool" 時仍會被隱藏）、主 switch 的 nowtab handler、PoolMap.refresh（切分頁時）
-- **批次 2 必須處理 TV()**：口袋清單搬到 #t-pool 後 cur==="pool"，TV() 會退回 T0()；要把條件擴成 `(cur==="now"||cur==="pool")&&viewTrip()`，口袋名單才會跟行程頁顯示同一趟。poolHTML(t)／PoolMap.render／poolgeo／QA_API.addPoolPlace 都靠 TV()/t
-- 目標：從行程頁分頁移除；「更多」頁（#t-more .more-grid）加一顆按鈕，點進新的 #t-pool 分頁（go("pool")）；BN_GROUP 加 pool→more，LB／ICN／renderDrawer 補上；一併清除上述 5 處殘留；列表卡選中項目 --accent 邊
-### 批次 2 之後：卡片「換景點」按鈕（使用者 2026/11/15 提出，規格已答覆，尚未動工）
-- 外觀：只有圖示、無文字、不用 emoji；建議圖釘＋雙向小箭頭（線條 1.75、22），要和切換行程的重整鈕、「導航至下一站」紙飛機區分
-- 位置（使用者已答）：卡片裡面、切換（重整）鈕的正下方、與「下一步」文字同一列的右側
-- 「附近」（使用者已答）：優先做「按下才一次性 GPS 定位」（navigator.geolocation，前景、使用者點擊觸發，不屬決策 8 排除的背景定位；與決策 4 當初「不用 GPS」是調整），依距離排序口袋名單景點（需有 lat/lng，沿用 poolgeo）；定位被拒或失敗時退回「同區域」（pool.area／geoCity）
-- 「換掉」（使用者已答）：**取代**下一步那一項（寫入每日行程資料）；沒有下一步（當天已結束）時按鈕仍在，選了之後變成新的下一步（加在當天末尾）
-- 流程：按鈕 → 列出附近口袋景點（彈層或卡內清單，動工前再問）→ 挑一個 → 取代並重畫水卡
-- 動工前還要問：被取代項目的時間（保留原時間／清空）、被換掉的項目是否放回口袋名單、僅「行程中／預覽」顯示還是行程前後也顯示、列出幾個、清單樣式
-- 依賴批次 2：口袋名單先搬到 #t-pool 並確定資料來源跟 TV()
-### 批次 3：首頁
-- 目前沒有首頁（brand 與預設都是 go("current")，底部 5 格不含首頁，BN_PAGES 不含 current）。預設新增 #t-home 為第一畫面，登入後落地，底部導覽顯示（深色玻璃，結構不變）
-- 影片背景：muted playsinline autoplay loop、poster、object-fit:cover、遮罩 linear-gradient(rgba(20,32,26,.25),rgba(20,32,26,.45))；WebM＋MP4；影片不進 sw.js 的 PRE 預先快取（使用者之後提供影片檔；暫定森林影片）
-- 沒新增過行程者出現呼吸按鈕「來趟旅行吧！」（白底 rgba(255,255,255,.92)、深字 #22302A、圓膠囊），沿用 form() 新增旅程彈窗，完成後跳行程頁
-- 光斑在影片右上，文字放左下到中間
-### 其他待決定／待辦
-- 琥珀色警示類未動（DESIGN.md 沒規範，需使用者決定）：.dwarn、.ftag.soft、.hl、#focus 的 .hl；另 .leaflet-tooltip.mname 深色、#t-past .addfab 與 .pc-item 的黑陰影、.chip.live／.mdot 藍色（成員定位）
-- welcome.css、quick-add.js、story-share.css、auth.js 使用者指定先不動；移除相容別名前要先改它們
-- 批次 0 沒有逐頁拆除舊的疊層覆寫（例如 .pill／.seg／.menu 的黑底再被白底覆寫），隨各頁批次一併整理
-- 原待辦仍在：T0() 改日期自動計算並移除手動 status:"now"；首頁三區與漢堡選單四類；整併 addex 與 addExpense；app.js 底部測試用 window 掛載清理；登出後清 has-bnav 殘留
+## 下一步（建議順序）
+1. 其餘黑底元素逐項改版（.glass.dark 其他頁、.toast、#undo、#updbar、#offbar、.drawer 內 button.on／.login／.sub.on、.story-stage、.days button.on／.plus、.bar button.on、.chip）；白底 .pill 看不清處檢查（.pc-act、.codebox、.story-foot）
+2. 旅程進行中的「現在／下一步」卡片與行程頁其他分頁（票券、備忘錄）套用減法；今天頁排版等手機截圖再議
+3. T0() 改日期自動計算；首頁三區、漢堡選單四類
+4. 整併 addex 與 addExpense；app.js 底部測試用 window 掛載清理
+
+## 待辦
+- T0() 改用日期自動計算，移除手動 status:"now"
+- 首頁三區、漢堡選單四類改版
+- 登入頁與轉場動畫拆除，套用設計規則 v2（welcome.css、auth.js 的 transitionIn）
+- 舊畫面逐頁套用 v2；標題襯線字體指定並進 SW 快取
+- 登出後清掉 has-bnav 殘留（目前無害）
+- 圓弧卡住：偶發，未重現（出現時先跑 document.getElementById("welcome").className）
+- 測試時若 Console 出現 Firestore 的 access control checks，先排除網路與網址問題再判斷程式
 
 ## 協作方式（2026/11/08 起）
 原因：Cline 轉貼或回報的程式碼會被改字，也曾整段重寫連帶刪掉相鄰函式，所以不再信任它的回報與轉貼。
@@ -250,5 +207,3 @@
 - 腳本交出後，要先確認使用者是否已跑過前一版；腳本一律以「使用者目前的檔案狀態」為基準，找不到就停下並請使用者回報 `git status --short`、`git diff --stat`
 - 還原用 revert 腳本或 git checkout（commit 前的改動可用）；使用者說「更差」就先整個退回，再討論
 - 是否買 Claude API 接 Cline：評估後暫不買（流程已有腳本保險）；若試用，先小額儲值並設月上限
-- 改版期間追加：每批做完（使用者跑腳本、實測、commit）→ 更新本檔 → 換新聊天室；新聊天室要重傳 DESIGN.md、SUMMARY.md、style.css、app.js、index.html、map.js（批次 2、3 不需要截圖；批次 3 首頁可附參考截圖）
-- sw.js 版號由使用者手動升（不經腳本）
