@@ -1,16 +1,17 @@
 /* DESIGN.md v4 色彩 token */
 :root{
 color-scheme:dark;--bg:#1E2B24;
---card:rgba(255,255,255,.12);--card-strong:rgba(30,43,36,.70);--card-border:rgba(255,255,255,.28);--btn:rgba(255,255,255,.18);--fill-on:rgba(255,255,255,.30);
+--card:rgba(255,255,255,.07);--card-strong:rgba(30,43,36,.70);--card-border:rgba(255,255,255,.22);--btn:rgba(255,255,255,.12);--fill-on:rgba(255,255,255,.22);--dim:rgba(0,0,0,0);
 --text:#F4F8F2;--text-2:rgba(244,248,242,.72);--accent:#A8D5B5;--accent-soft:rgba(168,213,181,.18);
 --warm:#F2B544;--warn:#C2402A;--shadow:rgba(10,20,14,.35);--danger-bg:#1E2B24;
---card-dark:rgba(255,255,255,.12);--card-dark-border:rgba(255,255,255,.28);
+--card-dark:rgba(255,255,255,.07);--card-dark-border:rgba(255,255,255,.22);
 --line:rgba(255,255,255,.18);
 --pin:#FF7A00;--pin-sel:#F26522; /* 地圖圖釘維持橘色：唯一的橘色例外 */
 --jelly-blur:blur(18px) saturate(1.4);
 --jelly-shadow:0 12px 32px var(--shadow),inset 0 1px 0 rgba(255,255,255,.9),inset 0 -8px 16px rgba(255,255,255,.25);
 /* 相容別名：welcome.css／quick-add.js／story-share.css 仍在使用，待那些檔案改版時移除 */
 --ink:var(--text);--tx:var(--text);--mut:var(--text-2);--ice:var(--accent);--aurora:var(--accent);--red:var(--warn);--gl:var(--card);--sh:0 12px 32px var(--shadow)}
+@media(prefers-color-scheme:dark){:root{--dim:rgba(0,0,0,.5)}}
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
 body{font-family:"Noto Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;color:var(--tx);background:var(--bg);max-width:720px;margin:0 auto;padding:0 14px 120px;line-height:1.55;min-height:100vh}
 .glass,.card{background:var(--card);-webkit-backdrop-filter:var(--jelly-blur);backdrop-filter:var(--jelly-blur);border:1px solid var(--card-border);border-radius:28px;box-shadow:var(--jelly-shadow)}
@@ -24,6 +25,8 @@ h1{font-size:2rem;font-weight:300;color:var(--ink);line-height:1.2}
 .seg button{flex:1;min-height:44px;border:0;border-radius:50px;background:transparent;font-size:.8rem;font-weight:600;color:var(--tx);cursor:pointer}
 .seg button.on{background:var(--ink);color:#fff}
 .panel{display:none;padding-top:12px}.panel.on{display:block}
+/* 淡入動畫不放在面板上：祖先的透明度動畫會讓 backdrop-filter 等動畫結束才生效。改放在玻璃元素自己身上 */
+.panel.on .glass,.panel.on .card,.panel.on .tile,.panel.on .more-card,.panel.on .dayhd,.panel.on .pc-body{animation:fd .35s}
 @keyframes fd{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 h2.sec{font-size:.85rem;font-weight:600;letter-spacing:.1em;color:var(--mut);margin:22px 4px 10px}
 .blk{padding:18px;margin-bottom:14px}
@@ -824,7 +827,7 @@ button .ix,.cb .ix,.x .ix{margin:0 auto}
 /* 當前行程頁面無底部懸浮導覽列 */
 
 /* 行程內底部導覽（DESIGN.md v2） */
-.bnav{display:none;position:fixed;left:16px;right:16px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:3000;max-width:688px;margin:0 auto;padding:8px;gap:0;border-radius:28px;background:var(--card);-webkit-backdrop-filter:var(--jelly-blur);backdrop-filter:var(--jelly-blur);border:1px solid var(--card-border);box-shadow:var(--jelly-shadow)}
+.bnav{display:none;position:fixed;left:16px;right:16px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:3000;max-width:688px;margin:0 auto;padding:8px;gap:0;border-radius:999px;background:var(--card);-webkit-backdrop-filter:var(--jelly-blur);backdrop-filter:var(--jelly-blur);border:1px solid var(--card-border);box-shadow:var(--jelly-shadow)}
 body.has-bnav .bnav{display:flex;align-items:center}
 body.has-bnav .bnav[hidden]{display:none}
 .bnav button{position:relative;flex:1;min-width:44px;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:0;border-radius:999px;background:transparent;color:var(--text-2);font:inherit;font-size:13px;font-weight:500;cursor:pointer}
@@ -837,6 +840,8 @@ body.bnav-hide .bnav{transform:translateY(130%)}
 /* ===== 首頁（DESIGN v4.1 批次 3）：唯一暗底，影片背景＋遮罩＋深色玻璃 ===== */
 .home-bg{position:fixed;inset:0;z-index:-1;background:var(--danger-bg) url(home-poster.jpg) center/cover no-repeat;overflow:hidden}
 .home-bg video{display:block;width:100%;height:100%;object-fit:cover}
+.home-bg::before{content:"";position:absolute;inset:0;background:var(--dim)}
+.bg-still .home-bg video{display:none}
 .home-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(20,32,26,.25),rgba(20,32,26,.45))}
 body[data-pg="home"] .top>div{visibility:hidden}
 #t-home{padding-top:0}

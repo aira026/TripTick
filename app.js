@@ -810,8 +810,12 @@ document.addEventListener("click",e=>{
 /* ===== 首頁（批次 3）===== */
 function renderHome(){const el=$("#home-act");if(!el)return;const has=tripList().length>0;
   el.innerHTML=has?'<button type="button" class="home-btn" data-a="gotnow">進入行程</button>':'<button type="button" class="home-btn breath" data-a="add" data-v="now">來趟旅行吧！</button>'}
-/* 影片：離開首頁就暫停；減少動態或省電模式（play 被擋）只顯示 poster */
-function homeVid(on){const v=$("#home-vid");if(!v)return;if(!on||reducedMotion()){try{v.pause()}catch(e){}return}try{const p=v.play();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
+/* 背景影片：減少動態、省流量、或播放被擋（iOS 低耗電模式會擋）時，改顯示 home-poster.jpg */
+function stillBg(b){document.documentElement.classList.toggle("bg-still",b)}
+function homeVid(on){const v=$("#home-vid");if(!v)return;const sd=!!(navigator.connection&&navigator.connection.saveData);
+  if(!on||reducedMotion()||sd){try{v.pause()}catch(e){}if(on)stillBg(true);return}
+  try{const p=v.play();if(p&&p.catch)p.catch(()=>stillBg(true));clearTimeout(homeVid.t);homeVid.t=setTimeout(()=>{if(v.paused)stillBg(true)},2500)}catch(e){stillBg(true)}}
+{const hv=$("#home-vid");if(hv)hv.addEventListener("playing",()=>stillBg(false))}
 document.body.dataset.pg=cur;updateBnav();homeVid(true);renderHome();
 // 導覽下滑收起：向下捲超過 40px 給 body 加 bnav-hide 讓導覽 translateY 滑出畫面；
 // 向上捲或回到頂部移除，過場 200ms；passive scroll 監聽，位移小於 8px 不觸發；
