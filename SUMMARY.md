@@ -1,7 +1,7 @@
-# 歷歷 TripTick 專案摘要卡 v11
+# 歷歷 TripTick 專案摘要卡 v12
 
-更新日期：2026/11/11
-狀態：口袋名單完整、每日頁／行程頁減法改版、「今天」頁（沒排行程時挑口袋名單）完成並實測通過（分支 feature/nav，本機領先 origin，尚未 push）。下一步見「下一步」。
+更新日期：2026/11/17
+狀態：口袋名單完整、每日頁／行程頁減法改版、「今天」頁完成並實測通過；歡迎頁（未登入）改為影片底＋登入轉場改淡出淡入，已 commit（分支 feature/nav，本機領先 origin，尚未 push）。下一輪：未來清單 `#t-future` 版面調整。
 
 ## 一句話
 旅伴再問「下一站去哪」，打開歷歷就知道。
@@ -41,6 +41,13 @@
 6. 圖卡免登入，存檔或下載才登入
 7. 傳播三條線：圖卡（後）、旅伴邀請（前中，旅伴免登入可看）、模板複製（前）
 8. 明確不做：景點資料庫、社群攻略、背景定位、比價訂房
+
+## 歡迎頁（2026/11/17 完成，已 commit）
+- 歡迎頁 #welcome（index.html／welcome.css／auth.js）背景透明，直接露出全站共用的 `.home-bg` 影片（fixed、z-index:-1），不另載影片；顯示期間以 `body:has(#welcome:not([hidden]):not(.revealing))` 把 header.top／main／.bnav／.drawer／.scrim 設 visibility:hidden
+- 中間放首頁同款 `.home-logo`（triptick.png），按鈕仍是 `#btn-google`（class gbtn），樣式沿用首頁 `.home-btn`（玻璃膠囊、serif 16 粗），文字「登入」（登入中「登入中…」、成功「登入成功」）；Google 圖示已移除；auth.js 的 setBusy 文案已同步
+- 轉場：不再用光圈收合；`.welcome.revealing` 時歡迎頁內容淡出 .3s，再讓 header／main／.bnav 以 tp-appin 淡入 .4s（延遲 .3s）；減少動態時直接淡出。auth.js transitionIn 時間（850ms 後 teardown）未動
+- logo／按鈕與首頁位置為估算對齊（頂 96px、底 104px），尚未量；若需微調只改 welcome.css `.welcome-ui` padding
+- 訊息與「稍後再說」文字改淺色（深色影片上可讀）
 
 ## 已定案：導覽
 行程內底部 5 格：今天｜行程｜記帳（中間圓鈕）｜票券｜更多
@@ -158,6 +165,7 @@
 - hokkaido.html 是靜態展示頁，與 app 無關
 
 ## 下一步（建議順序）
+0. 未來清單 `#t-future` 版面調整（新對話進行）：現況 index.html 為 `<section id="t-future" class="panel" aria-label="未來清單">` 內有 `.pills.addrow`（pill「＋ 新增旅程」，data-a="add" data-v="future"）與 `<div class="grid" id="l-future">`；卡片由 app.js 渲染，樣式在 style.css。動工前先看 app.js 渲染 l-future 的函式與 style.css 對應選擇器，並對照 DESIGN.md v3（清單列不用卡片、一頁一個焦點、同頁避免多顆相同膠囊、不留大面積深色、空狀態一句話＋一顆按鈕）。注意與決策 2「首頁三區」的關係，先確認這頁是否保留
 1. 其餘黑底元素逐項改版（.glass.dark 其他頁、.toast、#undo、#updbar、#offbar、.drawer 內 button.on／.login／.sub.on、.story-stage、.days button.on／.plus、.bar button.on、.chip）；白底 .pill 看不清處檢查（.pc-act、.codebox、.story-foot）
 2. 旅程進行中的「現在／下一步」卡片與行程頁其他分頁（票券、備忘錄）套用減法；今天頁排版等手機截圖再議
 3. T0() 改日期自動計算；首頁三區、漢堡選單四類
@@ -166,7 +174,7 @@
 ## 待辦
 - T0() 改用日期自動計算，移除手動 status:"now"
 - 首頁三區、漢堡選單四類改版
-- 登入頁與轉場動畫拆除，套用設計規則 v2（welcome.css、auth.js 的 transitionIn）
+- 登入頁已改影片底＋淡出淡入（見「歡迎頁」）；auth.js transitionIn 內的光圈圓心變數（--ox／--oy／--R）已不再被 CSS 使用，可日後清理
 - 舊畫面逐頁套用 v2；標題襯線字體指定並進 SW 快取
 - 登出後清掉 has-bnav 殘留（目前無害）
 - 圓弧卡住：偶發，未重現（出現時先跑 document.getElementById("welcome").className）
