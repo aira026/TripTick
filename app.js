@@ -23,7 +23,7 @@ const $=s=>document.querySelector(s);
 const esc=x=>String(x??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const flag=cc=>String.fromCodePoint(...[...cc.toUpperCase()].map(c=>127397+c.charCodeAt()));
 const fmt=(n,c)=>`${c} ${Math.round(n).toLocaleString()}`;
-let DATA=[],user="shared",unlocked=false,zm=null;const dayI={};let VIEW_ID=null,NOWOPEN=false,RV=null;
+let DATA=[],user="shared",unlocked=false,zm=null;const dayI={};let VIEW_ID=null,NOWOPEN=false,RV=null,FUT_OPEN=null;
 const store=(k,v)=>{try{v==null?localStorage.getItem(k):localStorage.setItem(k,v)}catch(e){}};
 const load=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),1600)}
@@ -207,7 +207,7 @@ function nowCard(t){const D=getDays(t),di=Math.min(dayI[t.id]??todayIdx(t),Math.
  <div class="dtools"><button class="pill gl mini2" data-a="dmaptoggle" id="dmapbtn">${dailyMapOpen?"收合地圖":"顯示地圖"}</button><div class="locbar" id="locbar">${locBarHTML(t)}</div></div><div class="glass mapbox dmapbox"><div id="nowmap" class="nowmap" role="application" aria-label="行程地圖"></div></div>${dailyMissingHTML(t)}</div>
  </div></div></div><button type="button" class="page-btn pg-auto nc-sw" data-a="swapnext" aria-label="換下一站景點"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h15M15 4l4 4-4 4"/><path d="M20 16H5M9 12l-4 4 4 4"/></svg></button></article></div>`}finally{RV=null}}
 function ptsOf(t){const P=[];getDays(t).forEach((d,i)=>d.items.forEach(x=>{if(x.lat!=null)P.push({lat:x.lat,lng:x.lng,day:i,dayLabel:`${d.k} ${d.date||""}`.trim(),time:x.t||"",title:x.h,place:x.q||"",note:x.d||""})}));if(!P.length)(t.spots||[]).forEach(s=>P.push({lat:s.lat,lng:s.lng,day:(s.day||1)-1,dayLabel:s.day?"D"+s.day:"",time:"",title:s.name,place:"",note:s.note||""}));return P}
-function refreshDays(t){const D=getDays(t),di=Math.min(dayI[t.id]??0,Math.max(0,D.length-1));dayI[t.id]=di;$("#dtabs").innerHTML=tabsHTML(t,di);$("#dayblk").innerHTML=daysAcc(t,di);MiniMap.render("nowmap",ptsOf(t),pickPt)}
+function refreshDays(t){if(cur==="future"){renderFuture();return}const D=getDays(t),di=Math.min(dayI[t.id]??0,Math.max(0,D.length-1));dayI[t.id]=di;$("#dtabs").innerHTML=tabsHTML(t,di);$("#dayblk").innerHTML=daysAcc(t,di);MiniMap.render("nowmap",ptsOf(t),pickPt)}
 async function saveItem(){const t=TV(),f=document.querySelector(".fm"),di=+f.dataset.di,ii=f.dataset.ii===""?null:+f.dataset.ii,v=i=>$("#fi-"+i).value.trim(),h=v("h");if(!h)return toast("請填寫標題");
  const D=getDays(t),day=D[di],old=ii!=null?day.items[ii]:{},x={...old,t:v("t"),h,d:v("d"),q:v("q"),more:v("m")};{const ty=v("type");if(ty)x.type=ty;else delete x.type}{const dg=[...document.querySelectorAll(".rtg:checked")].map(e=>e.value);if(dg.length)x.diet=dg;else delete x.diet}
  if(x.q&&(x.q!==old.q||x.lat==null)){toast("查詢座標中…");const g=await geo(x.q+(t.country?" "+t.country:""));if(g){x.lat=g[0];x.lng=g[1]}else{delete x.lat;delete x.lng;toast("找不到座標，地圖不會標記")}}
@@ -229,6 +229,22 @@ function mapZoom(t,k){const mz=$("#mz");if(zm===k){zm=null;mz.style.transform=""
  const d=getDays(t)[h.day]||{};$("#mi").innerHTML=`<b>${esc(h.name)}</b><span class="chip">${esc(d.k)}</span><p>${esc(h.note)}</p><p>${esc(d.date)} ${esc(d.city)}・${esc(d.tp)}</p><div class="pills"><button class="pill" data-a="day" data-v="${h.day}" data-go="1">看 ${esc(d.k)} 行程</button><a class="pill gl" href="https://maps.google.com/?q=${encodeURIComponent(h.name+" 北海道")}" target="_blank" rel="noopener">地圖</a></div>`}
 
 /* cards */
+/* ===== 未來清單：可展開行程卡（收合＝標題＋國家・日期・天數；展開＝按鈕＋每日行程，可編輯） ===== */
+function futTrip(){return FUT_OPEN?visible().find(x=>x.id===FUT_OPEN&&x.status==="future")||null:null}
+function fcard(t){const open=FUT_OPEN===t.id,id=esc(t.id),n=nd(t),D=getDays(t),di=Math.min(dayI[t.id]??0,Math.max(0,D.length-1)),ed=document.body.classList.contains("editing");dayI[t.id]=di;RV=t;
+ try{const place=[flagOf(t),t.country?esc(t.country):""].filter(Boolean).join(" "),meta=[place,(t.startDate?esc(t.startDate):"日期未定")+(t.endDate?" – "+esc(t.endDate.slice(5)):""),n+" 天"].filter(Boolean).join("・");
+ return`<article class="glass fc${open?" is-open":""}" data-tid="${id}"><button type="button" class="fc-hd" data-a="futopen" data-v="${id}" aria-expanded="${open}" aria-controls="fcm-${id}"><span class="fc-tt"><b>${esc(t.title)}</b><small>${meta}</small></span><i class="chev" aria-hidden="true"></i></button>
+<div class="fc-more" id="fcm-${id}"${open?"":" inert"}><div class="fc-in"><div class="fc-pad">${t.notes?`<p class="fc-note">${esc(t.notes)}</p>`:""}
+<div class="fc-act"><button class="pill" data-a="setcur" data-v="${id}">設為當前行程</button>${me?`<button class="pill gl" data-a="edit" data-v="${id}"><i class=i-edit></i> 編輯</button>`:""}${t.owner===me?.uid?`<button class="pill gl" data-a="del" data-v="${id}"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg> 刪除</button>`:""}</div>
+${me?`<div class="pills topact"><button class="pill mini edt${ed?" on":""}" data-a="edtoggle"><i class="i-edit"></i><span class="edt-l">${ed?"結束並儲存":"編輯模式"}</span></button></div>`:""}
+<div class="days">${tabsHTML(t,di)}</div><div class="fc-day">${dayHTML(t,di)}</div></div></div></div></article>`}finally{RV=null}}
+function renderFuture(){const el=$("#l-future");if(!el)return;
+ try{const L=visible().filter(t=>t.status==="future").sort((a,b)=>(a.startDate?0:1)-(b.startDate?0:1)||String(a.startDate||"").localeCompare(String(b.startDate||"")));
+  if(FUT_OPEN&&!L.some(t=>t.id===FUT_OPEN))FUT_OPEN=null;
+  el.innerHTML=L.map(x=>fcard(x)).join("")||'<p class="empty">還沒有未來的旅程，點上方「＋ 新增旅程」開始規劃</p>'}catch(e){console.error("[renderFuture]",e)}}
+function futToggle(id){const was=FUT_OPEN===id;if(FUT_OPEN)setEdit(false);FUT_OPEN=was?null:id;
+ document.querySelectorAll("#l-future .fc").forEach(c=>{const on=c.dataset.tid===FUT_OPEN,m=c.querySelector(".fc-more"),h=c.querySelector(".fc-hd");c.classList.toggle("is-open",on);if(m){if(on)m.removeAttribute("inert");else m.setAttribute("inert","")}if(h)h.setAttribute("aria-expanded",String(on))});
+ const c=FUT_OPEN&&document.querySelector("#l-future .fc.is-open");if(c){bounce(c);setTimeout(()=>{try{c.scrollIntoView({behavior:"smooth",block:"nearest"})}catch(e){}},420)}}
 function tcard(t){if(t.status==="past")return pcard(t);const fut=t.status==="future",mine=String(t.id).startsWith("u-");
  return`<article class="glass tc ${fut?"fut":""}"><div class="ph">${(t.image||photoOf(t.id))?`<img src="${esc(t.image||photoOf(t.id))}" alt="${esc(t.title)}" loading="lazy" onerror="this.remove()">`:""}<span>${flagOf(t)}</span></div><div class="in"><h3>${esc(t.title)}</h3><p class="meta">${esc(t.country)}・${esc(t.startDate||"日期未定")}${t.endDate?" – "+esc(t.endDate.slice(5)):""}・${nd(t)} 天</p>${t.notes?`<p style="margin-top:8px;font-size:.9rem">${esc(t.notes)}</p>`:""}
  <div class="pills" style="margin-top:10px">${t.spots?.length?`<a class="pill gl" href="https://maps.google.com/?q=${t.spots[0].lat},${t.spots[0].lng}" target="_blank" rel="noopener">地圖</a>`:""}${t.status==="past"?`<button class="pill" data-a="setcur" data-v="${esc(t.id)}">重新設為當前行程</button>`:""}${fut?`<button class="pill" data-a="setcur" data-v="${esc(t.id)}">設為當前行程</button>`:""}${me?`<button class="pill gl" data-a="edit" data-v="${esc(t.id)}"><i class=i-edit></i> 編輯</button>`:""}${t.owner===me?.uid?`<button class="pill gl" data-a="del" data-v="${esc(t.id)}"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg> 刪除</button>`:""}</div></div></article>`}
@@ -665,7 +681,7 @@ function render(){const v=visible(),by=s=>v.filter(t=>t.status===s);zm=null;
  $("#stats").innerHTML=`<div class="glass stat"><b>${new Set(real.map(t=>t.countryCode||t.country)).size}</b><small>造訪國家</small></div><div class="glass stat"><b>${real.reduce((s,t)=>s+nd(t),0)}</b><small>總天數</small></div><div class="glass stat"><b>${real.length}</b><small>趟旅行</small></div>`;
  MapView.render(v);if(cur==="map")MapView.refresh();
  const emp='<p class="empty">還沒有旅程，點上方「＋ 新增旅程」開始記錄</p>';
- $("#l-past").innerHTML=pastOrder(by("past")).map(tcard).join("")||emp;$("#l-future").innerHTML=by("future").map(tcard).join("")||emp;photoGC();pastInit();renderDrawer();updBar();tick();syncLoc()}
+ $("#l-past").innerHTML=pastOrder(by("past")).map(tcard).join("")||emp;renderFuture();photoGC();pastInit();renderDrawer();updBar();tick();syncLoc()}
 function tick(){const el=$("#cd"),t=viewTrip();if(!el||!t||!t.startDate)return;const now=new Date(),st=new Date(t.startDate+"T00:00");
  const al=t.alerts||[];if(now>=st&&!al.length){const dd=Math.floor((now-st)/864e5)+1;el.textContent=dd<=nd(t)?`旅程第 ${dd} 天`:"旅程結束";return}
  if(now<st){el.textContent=`出發倒數 ${Math.ceil((st-now)/864e5)} 天`;return}
@@ -754,6 +770,7 @@ if(a==="medel"&&t){QA_API.deleteMemoEntry(t,v);return}
  if(a==="accday"){const sec=document.getElementById("dacc-"+v);if(sec){const o=sec.classList.toggle("open");b.setAttribute("aria-expanded",o)}return}
  if(a==="print"){document.body.classList.remove("dr");go("now");{const t0=TV();if(t0&&$("#dayblk"))$("#dayblk").innerHTML=getDays(t0).map((_,n)=>dayHTML(t0,n)).join("")}setTimeout(()=>{try{MiniMap.refresh()}catch(e){}setTimeout(()=>window.print(),350)},150);return}
  if(a==="cprev"||a==="cnext"||a==="creset"){curStep(a);return}
+ if(a==="futopen"){futToggle(v);return}
  if(a==="nowopen"){if(b.id==="live"&&e.target.closest("a"))return;nowToggle();return}
   if(a==="swapnext"){swapNextOpen();return}if(a==="swappick"){swapNextDo(v);return}
   if(a==="lvnext"||a==="lvprev"||a==="lvauto"){liveStep(a);return}
@@ -1009,7 +1026,7 @@ function pickTrip(L){L=L||tripList();if(!L.length)return null;const now=Date.now
  const cur0=L.find(x=>x.status==="now");if(cur0)return cur0;
  near.sort((a,b)=>a.d-b.d);const live=near.find(x=>x.t.status!=="past");return(live||near[0]||{}).t||L.find(x=>x.status!=="past")||L[0]}
 function viewTrip(){const L=tripList();if(VIEW_ID){const f=L.find(x=>x.id===VIEW_ID);if(f)return f;VIEW_ID=null}return pickTrip(L)}
-function TV(){return RV||((cur==="now"||cur==="pool")&&viewTrip())||T0()}
+function TV(){return RV||((cur==="now"||cur==="pool")&&viewTrip())||(cur==="future"&&futTrip())||T0()}
 function LT(){return viewTrip()||T0()}
 function reducedMotion(){try{return matchMedia("(prefers-reduced-motion: reduce)").matches}catch(e){return false}}
 function bounce(el){if(!el||reducedMotion())return;el.classList.remove("jelly");void el.offsetWidth;el.classList.add("jelly");setTimeout(()=>el.classList.remove("jelly"),460)}
@@ -1021,7 +1038,7 @@ function nowEmpty(){if(!FB_OK||!me)return emptyNow();
  return`<div class="nowrow"><article class="nowcard glass is-empty" id="nowcard"><span class="nc-rip" aria-hidden="true"></span><div class="nc-top"><div class="nc-hd static"><span class="ldot" aria-hidden="true"></span><b class="nc-t">還沒有行程</b></div><p class="nc-note">新增第一趟旅行後，這裡會顯示現在與下一步。</p><div class="nc-ctl"><button type="button" class="nc-btn" data-a="add" data-v="now">來趟旅行吧！</button></div><div class="nc-ctl"><button type="button" class="nc-btn sub" data-a="join">輸入邀請碼</button><button type="button" class="nc-btn sub" data-a="tpl">匯入範例：北海道</button></div></div></article></div>`+guide()+(foodSnap()?'<div class="pills" style="margin-top:10px"><button class="pill gl" data-a="m" data-v="diet">飲食卡（離線快照）</button></div>':"")}
 /* ===== 每日行程：純 Tab View（一次只顯示一天） ===== */
 const daysAcc=(t,di)=>dayHTML(t,di);
-function focusDay(t,i,go){dayI[t.id]=i;const b=$("#dayblk");if(b)b.innerHTML=dayHTML(t,i);document.querySelectorAll("#dtabs button").forEach((x,n)=>x.classList.toggle("on",n===i));if(go){const d=$("#dtabs");if(d)d.scrollIntoView({behavior:"smooth",block:"start"})}}
+function focusDay(t,i,go){dayI[t.id]=i;if(cur==="future"){renderFuture();return}const b=$("#dayblk");if(b)b.innerHTML=dayHTML(t,i);document.querySelectorAll("#dtabs button").forEach((x,n)=>x.classList.toggle("on",n===i));if(go){const d=$("#dtabs");if(d)d.scrollIntoView({behavior:"smooth",block:"start"})}}
 window.addEventListener("afterprint",()=>{const t=TV(),b=$("#dayblk");if(t&&b)b.innerHTML=dayHTML(t,dayI[t.id]||0)});
 window.addEventListener("resize",()=>{try{MapView.refresh();MiniMap.refresh()}catch(e){}});
 

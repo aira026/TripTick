@@ -969,3 +969,26 @@ body[data-pg="home"] .top>div{visibility:hidden}
 /* ===== patch-css: 第3批去黑底（.chip／.bar／.lang／.ftag） ===== */
 .chip,.ftag{background:var(--accent-soft);color:var(--text);border:1px solid rgba(244,248,242,.14)}
 .bar button.on,.lang button.on{background:var(--fill-on);color:var(--text);font-weight:700;box-shadow:var(--sh)}
+
+/* ===== patch-css: 未來清單（可展開行程卡，參照行程頁 .nowcard） ===== */
+#t-future .grid{display:flex;flex-direction:column;gap:16px}
+.fc{padding:0;overflow:hidden}
+.fc-hd{display:flex;align-items:center;gap:16px;width:100%;min-height:64px;padding:16px 24px;border:0;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.fc-tt{flex:1;min-width:0}
+.fc-tt b{display:block;font-size:16px;font-weight:700;line-height:1.4;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fc-tt small{display:block;margin-top:4px;font-size:13px;color:var(--text-2)}
+.fc .chev{flex:0 0 auto;margin:0 4px 4px 2px}
+.fc.is-open .chev{transform:rotate(-135deg);margin:4px 4px 0 2px}
+.fc-more{display:grid;grid-template-rows:0fr;transition:grid-template-rows 380ms cubic-bezier(.2,.8,.2,1)}
+.fc.is-open .fc-more{grid-template-rows:1fr}
+.fc-in{min-height:0;overflow:hidden}
+.fc-pad{padding:16px 24px 24px;border-top:1px solid rgba(244,248,242,.08);opacity:0;transition:opacity 220ms ease}
+.fc.is-open .fc-pad{opacity:1;transition-delay:120ms}
+.fc-note{margin:0 0 16px;font-size:16px;line-height:1.5;color:var(--text-2)}
+.fc-act{display:flex;flex-wrap:wrap;gap:8px}
+.fc-act .pill{margin:0}
+.fc-act .pill.gl{background:transparent;border:1px solid rgba(244,248,242,.12);box-shadow:none;color:var(--text);font-weight:500}
+.fc .topact{margin:16px 0 8px}
+.fc .days button{-webkit-backdrop-filter:none;backdrop-filter:none}
+.fc .glass.blk{background:var(--btn);border-radius:16px;box-shadow:none}
+@media (prefers-reduced-motion:reduce){.fc-more,.fc-pad{transition:none}}
