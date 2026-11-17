@@ -1,7 +1,7 @@
-# 歷歷 TripTick 專案摘要卡 v12
+# 歷歷 TripTick 專案摘要卡 v13
 
 更新日期：2026/11/17
-狀態：口袋名單完整、每日頁／行程頁減法改版、「今天」頁完成並實測通過；歡迎頁（未登入）改為影片底＋登入轉場改淡出淡入，已 commit（分支 feature/nav，本機領先 origin，尚未 push）。下一輪：未來清單 `#t-future` 版面調整。
+狀態：口袋名單完整、每日頁／行程頁減法改版、「今天」頁完成並實測通過；歡迎頁（未登入）改為影片底＋登入轉場改淡出淡入，已 commit（分支 feature/nav，本機領先 origin，尚未 push）。未來清單 `#t-future` 改為可展開行程卡，已驗收（2026/11/17）。下一輪：全球足跡 `#t-map` 改版討論（新對話，先診斷與提方向，不急著寫程式）。
 
 ## 一句話
 旅伴再問「下一站去哪」，打開歷歷就知道。
@@ -48,6 +48,14 @@
 - 轉場：不再用光圈收合；`.welcome.revealing` 時歡迎頁內容淡出 .3s，再讓 header／main／.bnav 以 tp-appin 淡入 .4s（延遲 .3s）；減少動態時直接淡出。auth.js transitionIn 時間（850ms 後 teardown）未動
 - logo／按鈕與首頁位置為估算對齊（頂 96px、底 104px），尚未量；若需微調只改 welcome.css `.welcome-ui` padding
 - 訊息與「稍後再說」文字改淺色（深色影片上可讀）
+
+## 未來清單 #t-future（2026/11/17 完成，已驗收）
+- 改為可展開行程卡（類名 .fc，CSS 在 style.css 末尾 patch 區塊，展開動畫與行程頁 .nowcard 同款）。收合＝標題（16 粗）＋小字「國旗 國家・日期・天數」＋箭頭；展開＝備註（有才顯示）、「設為當前行程」（主按鈕）、「編輯」「刪除」（透明外框次要按鈕）、右上「編輯模式」鈕、每日分頁與行程清單（重用 tabsHTML／dayHTML／itm，樣式同行程頁）
+- 一次只展開一張，狀態存模組變數 FUT_OPEN（與 NOWOPEN 並列宣告）；清單依出發日由近到遠，沒日期排最後；空狀態一句話，新增旅程鈕維持頁面上方那一顆
+- 新函式（app.js，tcard 前）：futTrip()、fcard(t)、renderFuture()、futToggle(id)；render() 內改呼叫 renderFuture()；主 switch 新增 `futopen`
+- 每日編輯沿用行程頁同一組 handler（additem／edititem／delitem／addday／editday／delday／saveitem／saveday），靠 TV() 在 cur==="future" 時回傳 FUT_OPEN 那趟行程；refreshDays、focusDay 開頭各加 future 分支（直接呼叫 renderFuture）
+- 這頁拿掉：封面照片（資料未刪）、「地圖」鈕、虛線外框、每日地圖。舊 tcard 保留給歷史旅程用
+- 與決策 2（首頁三區）無衝突：這頁保留，首頁三區之後獨立處理
 
 ## 已定案：導覽
 行程內底部 5 格：今天｜行程｜記帳（中間圓鈕）｜票券｜更多
@@ -145,7 +153,7 @@
 - 分段切換：<div class="seg"><button class="on">…</button></div>，選擇器是 .seg button.on
 - 不另做 popover 或 ⋯ 選單
 - 備忘一律走底部彈層寫入；備忘 handler 慣例：eb(k,i)（memoedit／memodel）、meb(id)（meedit／medel）
-- 口袋名單 handler：poolnew／pooledit／pooldel／poolplan／poolplanok／nowtab（主 switch），poolgeo／georetry／poolmaptoggle／dmaptoggle（獨立監聽）
+- 口袋名單 handler：poolnew／pooledit／pooldel／poolplan／poolplanok／nowtab／futopen（主 switch），poolgeo／georetry／poolmaptoggle／dmaptoggle（獨立監聽）
 - CSS 慣例：新樣式一律加在 style.css 末尾（後蓋前）；表單內 `.fm label{display:block}` 會蓋掉 .chk 的 flex，要用更高優先權；`#live:has(...)` 可依內容換外觀
 - setEdit(on)、bar0(arch) 是編輯模式與頂部按鈕列的核心，改周邊時不可動
 - 小地圖容器在隱藏分頁時尺寸為 0：切分頁後要 invalidateSize（refresh）
@@ -159,13 +167,14 @@
 - 分段切換狀態重新整理不保留
 - 定位準確度（OpenStreetMap）：地址含縣市最準；只填名稱＋含糊區域（如「東區」）可能配到別的城市，且配錯無法偵測；台灣地名 OSM 多用「臺」。區域欄目前同時當定位線索，是已知取捨（改法見下一步）
 - 定位失敗的點會多等數秒；Nominatim 限速約 1 次/秒
+- TV() 現在有三種來源：RV（渲染中）→ 行程頁／口袋頁的 viewTrip() → 未來清單展開的 futTrip() → T0()；新增依賴 TV() 的功能要注意 cur 是哪一頁
 - 「今天」有行程的畫面：按鈕與版面維持舊樣式，尚未做手機單手實測
 - 彈層「在哪一站」清單 CSS 為 display:none，疑似看不到清單（地點分頁已隱藏，花費／備註分頁可能受影響，待手機實測）
 - 舊備忘沒有日期，固定排在「未標日期」最下面
 - hokkaido.html 是靜態展示頁，與 app 無關
 
 ## 下一步（建議順序）
-0. 未來清單 `#t-future` 版面調整（新對話進行）：現況 index.html 為 `<section id="t-future" class="panel" aria-label="未來清單">` 內有 `.pills.addrow`（pill「＋ 新增旅程」，data-a="add" data-v="future"）與 `<div class="grid" id="l-future">`；卡片由 app.js 渲染，樣式在 style.css。動工前先看 app.js 渲染 l-future 的函式與 style.css 對應選擇器，並對照 DESIGN.md v3（清單列不用卡片、一頁一個焦點、同頁避免多顆相同膠囊、不留大面積深色、空狀態一句話＋一顆按鈕）。注意與決策 2「首頁三區」的關係，先確認這頁是否保留
+0. 全球足跡 `#t-map` 改版（新對話進行）：現況 index.html 為 `<section id="t-map" class="panel">`，內有 `#stats`（三張 .glass.stat：造訪國家／總天數／趟旅行）與 `.glass.mapbox` 內的 `#map`；資料由 app.js render() 計算、map.js 的 MapView 繪製（需上傳 map.js）。使用者覺得「有點可惜」但還沒有方向：先診斷現況並提 2～3 個方向，確認後才寫腳本；對照 DESIGN.md v3（一頁一個焦點、不留大面積深色、裝飾性圖形不要、地圖預設收合的原則是否適用要討論）
 1. 其餘黑底元素逐項改版（.glass.dark 其他頁、.toast、#undo、#updbar、#offbar、.drawer 內 button.on／.login／.sub.on、.story-stage、.days button.on／.plus、.bar button.on、.chip）；白底 .pill 看不清處檢查（.pc-act、.codebox、.story-foot）
 2. 旅程進行中的「現在／下一步」卡片與行程頁其他分頁（票券、備忘錄）套用減法；今天頁排版等手機截圖再議
 3. T0() 改日期自動計算；首頁三區、漢堡選單四類
