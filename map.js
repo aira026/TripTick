@@ -3,11 +3,14 @@ const popEl=(rows)=>{const d=document.createElement("div");d.className="pp";rows
 const MapView={map:null,layer:null,
 init(){this.map=L.map("map").setView([30,120],2);
  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap",maxZoom:18}).addTo(this.map);
- this.layer=L.layerGroup().addTo(this.map)},
-render(trips){this.layer.clearLayers();const all=[],col={past:"#8a8178",now:MAP_PIN,future:"#8c9a8b"};
+ this.layer=L.layerGroup().addTo(this.map);this.map.on("click",()=>{this.onBlank&&this.onBlank()})},
+onPick(t,s,m){m.bindPopup(popEl([["pt",s.name],["pd",t.title+(s.day?"・D"+s.day:"")]])).openPopup()},
+pick(m){this.unpick();this.cur=m;m.setStyle({radius:10,weight:3});m.bringToFront()},
+unpick(){if(this.cur){this.cur.setStyle({radius:7,weight:2});this.cur=null}},
+render(trips){this.layer.clearLayers();this.cur=null;const all=[],col={past:"#8a8178",now:MAP_PIN,future:"#8c9a8b"};
  trips.forEach(t=>{if(t.locked||!t.spots)return;const c=col[t.status],pts=[...t.spots].sort((a,b)=>a.day-b.day).map(s=>[s.lat,s.lng]);
   if(pts.length>1)L.polyline(pts,{color:c,weight:3.5,opacity:.85,dashArray:'6, 8'}).addTo(this.layer);
-  t.spots.forEach(s=>{all.push([s.lat,s.lng]);L.circleMarker([s.lat,s.lng],{radius:7,color:"#FFFFFF",weight:2,fillColor:MAP_PIN,fillOpacity:.9}).bindPopup(popEl([["pt",s.name],["pd",t.title+(s.day?"・D"+s.day:"")]])).addTo(this.layer)})});
+  t.spots.forEach(s=>{all.push([s.lat,s.lng]);const m=L.circleMarker([s.lat,s.lng],{radius:7,color:"#FFFFFF",weight:2,fillColor:MAP_PIN,fillOpacity:.9}).addTo(this.layer);m.on("click",e=>{L.DomEvent.stopPropagation(e);this.pick(m);this.onPick(t,s,m)})})});
  this.pts=all;if(all.length)this.map.fitBounds(all,{padding:[30,30],maxZoom:6})},
 refresh(){setTimeout(()=>{try{this.map.invalidateSize();if(this.pts&&this.pts.length)this.map.fitBounds(this.pts,{padding:[30,30],maxZoom:6})}catch(e){}},60)}};
 

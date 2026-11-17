@@ -992,3 +992,21 @@ body[data-pg="home"] .top>div{visibility:hidden}
 .fc .days button{-webkit-backdrop-filter:none;backdrop-filter:none}
 .fc .glass.blk{background:var(--btn);border-radius:16px;box-shadow:none}
 @media (prefers-reduced-motion:reduce){.fc-more,.fc-pad{transition:none}}
+
+
+/* ===== 全球足跡：統計列 4 格 + 底部抽屜 ===== */
+.stats{grid-template-columns:repeat(4,1fr);gap:8px;background:none;border-radius:0;overflow:visible}
+.stat{padding:16px 4px}.stat b{font-size:1.6rem}.stat small{font-size:13px}
+.msheet{position:fixed;left:0;right:0;bottom:0;z-index:3100;max-width:720px;margin:0 auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom));max-height:80vh;overflow:auto;border-radius:28px 28px 0 0;background:var(--card-strong);-webkit-backdrop-filter:var(--jelly-blur);backdrop-filter:var(--jelly-blur);border:1px solid var(--card-border);border-bottom:0;box-shadow:var(--jelly-shadow);color:var(--text);transform:translateY(105%);visibility:hidden;transition:transform .28s ease,visibility .28s}
+.msheet.on{transform:none;visibility:visible}
+.ms-x{position:absolute;top:16px;right:16px;z-index:1;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--card-border);background:var(--card-strong);color:var(--text);cursor:pointer}
+.ms-ph{height:152px;margin-bottom:16px;border-radius:16px;overflow:hidden;background:var(--card)}.ms-ph img{display:block;width:100%;height:100%;object-fit:cover}
+.ms-id{padding-right:56px}.ms-id small{font-size:13px;color:var(--text-2)}
+.ms-id h3{margin:8px 0;font-family:"Noto Serif TC","Songti TC","PMingLiU","MingLiU",serif;font-size:24px;font-weight:600;line-height:1.3;color:var(--text)}
+.ms-id p{margin:0;font-size:13px;color:var(--text-2)}
+.ms-act{display:flex;gap:8px;margin-top:16px}.ms-act .pill{flex:1;min-height:44px;padding:0 16px;font-size:16px;white-space:nowrap}
+.msheet .pill.gl{background:transparent;border:1px solid var(--card-border);box-shadow:none}
+@media print{.msheet{display:none!important}}
+
+/* ===== 新增鈕的「＋」：原本淺綠加號在淺色玻璃上太淡，改成小深色圓底＋白色加號（只動 .dot；--accent 全域不動） ===== */
+.dot{background:rgba(30,43,36,.62);color:#fff;font-weight:700}

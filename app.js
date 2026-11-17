@@ -678,7 +678,7 @@ function render(){const v=visible(),by=s=>v.filter(t=>t.status===s);zm=null;
   
   if(cur==="home")renderHome();
  const real=v.filter(t=>t.status!=="future");
- $("#stats").innerHTML=`<div class="glass stat"><b>${new Set(real.map(t=>t.countryCode||t.country)).size}</b><small>造訪國家</small></div><div class="glass stat"><b>${real.reduce((s,t)=>s+nd(t),0)}</b><small>總天數</small></div><div class="glass stat"><b>${real.length}</b><small>趟旅行</small></div>`;
+ $("#stats").innerHTML=`<div class="glass stat"><b>${new Set(real.map(t=>t.countryCode||t.country)).size}</b><small>造訪國家</small></div><div class="glass stat"><b>${cityCount(real)}</b><small>造訪城市</small></div><div class="glass stat"><b>${real.reduce((s,t)=>s+nd(t),0)}</b><small>總天數</small></div><div class="glass stat"><b>${real.length}</b><small>趟旅行</small></div>`;
  MapView.render(v);if(cur==="map")MapView.refresh();
  const emp='<p class="empty">還沒有旅程，點上方「＋ 新增旅程」開始記錄</p>';
  $("#l-past").innerHTML=pastOrder(by("past")).map(tcard).join("")||emp;renderFuture();photoGC();pastInit();renderDrawer();updBar();tick();syncLoc()}
@@ -804,7 +804,7 @@ document.addEventListener("input",e=>{if(e.target.id==="jpy"||e.target.id==="rat
 document.addEventListener("change",e=>{const c=e.target.closest("input[data-k]"),t=T0();if(!c||!t)return;const P=plist(t);P[c.dataset.k][+c.dataset.i].d=c.checked?1:0;savePl(t,P);c.closest(".ck").classList.toggle("done",c.checked)});
 
 document.addEventListener("change",e=>{const i=e.target.closest("input[data-b]"),t=T0();if(!i||!t)return;const L=bkList(t);L[+i.dataset.i][i.dataset.b]=i.value.trim();saveBk(t,L)});
-function go(id){setEdit(false);cur=id;document.body.dataset.pg=id;document.body.classList.remove("dr");document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("on",p.id==="t-"+id));renderDrawer();window.scrollTo({top:0});if(id==="map")MapView.refresh();if(id==="now")MiniMap.refresh();if(id==="pool"){try{PoolMap.refresh()}catch(e){}}if(id==="home")renderHome();homeVid(true);updateBnav()}
+function go(id){try{closeMapSheet()}catch(e){}setEdit(false);cur=id;document.body.dataset.pg=id;document.body.classList.remove("dr");document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("on",p.id==="t-"+id));renderDrawer();window.scrollTo({top:0});if(id==="map")MapView.refresh();if(id==="now")MiniMap.refresh();if(id==="pool"){try{PoolMap.refresh()}catch(e){}}if(id==="home")renderHome();homeVid(true);updateBnav()}
 const ICN={now:"cal",pool:"pin",tix:"card",storm:"note",yen:"yen",pack:"chk",map:"globe",past:"clock",future:"compass"};
 function renderDrawer(){const t=T0(),nm=t?(t.short||t.title):"",b=(id,c)=>`<button class="${c} ${cur===id?"on":""}" data-t="${id}"><i class="ic ic-${ICN[id]}"></i>${LB[id]}</button>`;
  $("#drawer").innerHTML=`<p class="eyebrow brand" data-a="home">TripTick</p><h2 class="brand" data-a="home">歷歷</h2><button data-t="home" class="${cur==="home"?"on":""}"><i class="ic ic-nav"></i>首頁</button><p class="grp"><i class="ic ic-pin"></i>當前旅程　${t?esc(nm):"（目前沒有）"}</p>${t?SUB.map(i=>b(i,"sub")).join(""):""}<p class="grp">其他旅程</p>${["map","past","future"].map(i=>b(i,"")).join("")}${drawerExtra()}<p class="meta" style="margin-top:auto">資料儲存在你的 Google 帳戶。</p>`;
@@ -1612,3 +1612,32 @@ document.addEventListener("click",e=>{const r=e.target.closest("#t-pool .pt-row"
 document.addEventListener("click",e=>{if(!e.target.closest('[data-a="dmaptoggle"]'))return;dailyMapOpen=!dailyMapOpen;const b=document.getElementById("dmapbtn"),w=document.getElementById("ptdaily");if(b)b.textContent=dailyMapOpen?"收合地圖":"顯示地圖";if(w)w.classList.toggle("dmap-on",dailyMapOpen);if(dailyMapOpen)setTimeout(()=>{const t=TV();if(t){try{refreshDays(t)}catch(e){}try{drawMembers()}catch(e){}}},80)});
 // ===== /口袋名單地圖 =====
 window.QA_API = { toast, esc, getLocalDateStr, getTodayItems, T0: TV, addExpense, addMemoEntry, editMemoEntry, deleteMemoEntry, addPoolPlace, editPoolPlace, deletePoolPlace, poolAreas, canEdit:(t)=>!!me&&!!t&&(t.members||[]).includes(me.uid) };
+
+
+/* ===== 造訪城市數：每趟取每日行程的 city 欄位；沒填任何城市才退回「地點」欄；跨旅程去重（同國家同名只算一次） ===== */
+function cityCount(list){const set=new Set();
+ list.forEach(t=>{const cc=t.countryCode||t.country||"",cs=getDays(t).map(d=>(d.city||"").trim()).filter(Boolean),
+  src=cs.length?cs:[(t.title||"").trim()].filter(c=>c&&c!==t.country);
+  src.forEach(c=>set.add(cc+"|"+c.toLowerCase()))});
+ return set.size}
+
+/* ===== 全球足跡：點圖釘 → 底部抽屜（封面、國家、日期、旅客、查看旅程、設為當前行程） ===== */
+function closeMapSheet(){const el=document.getElementById("msheet");if(!el||!el.classList.contains("on"))return;el.classList.remove("on");el.setAttribute("aria-hidden","true");try{MapView.unpick()}catch(e){}}
+function openMapSheet(t,s){const el=document.getElementById("msheet");if(!el)return;
+ const img=t.image||photoOf(t.id)||"",m=pcMeta(t),
+  sub=[flagOf(t),t.country?esc(t.country):""].filter(Boolean).join(" ")+(s.day?"・D"+s.day:""),
+  line=[s.name&&s.name!==t.title?esc(t.title):"",esc(m.dateTxt),nd(t)+" 天"].filter(Boolean).join("・");
+ el.innerHTML=`<button class="ms-x" type="button" data-a="msclose" aria-label="關閉"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+ ${img?`<div class="ms-ph"><img src="${esc(img)}" alt="${esc(t.title)}" onerror="this.parentNode.remove()"></div>`:""}
+ <div class="ms-id"><small>${sub}</small><h3>${esc(s.name||t.title)}</h3><p>${line}</p><p>旅客：${esc(m.mateTxt)}</p></div>
+ <div class="ms-act"><button class="pill" type="button" data-a="msgo" data-v="${esc(t.id)}">查看旅程</button>${t.status==="now"?"":`<button class="pill gl" type="button" data-a="setcur" data-v="${esc(t.id)}">設為當前行程</button>`}</div>`;
+ el.classList.add("on");el.setAttribute("aria-hidden","false");
+ requestAnimationFrame(()=>{try{const mp=MapView.map,c=mp.getContainer().getBoundingClientRect(),p=mp.latLngToContainerPoint([s.lat,s.lng]),y=c.top+p.y,lim=innerHeight-el.offsetHeight-48;if(y>lim)mp.panBy([0,y-lim])}catch(e){}})}
+MapView.onPick=openMapSheet;MapView.onBlank=closeMapSheet;
+document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,v=b.dataset.v;
+ if(a==="msclose")closeMapSheet();
+ if(a==="msgo"){const t=visible().find(x=>x.id===v);if(!t)return;const pg=t.status==="past"?"past":t.status==="future"?"future":"now";closeMapSheet();go(pg);
+  if(pg==="past")requestAnimationFrame(()=>{const el=[...document.querySelectorAll("#l-past .pc-item")].find(x=>x.dataset.pid===v);if(el)el.scrollIntoView({inline:"center",block:"nearest",behavior:"smooth"})})}});
+(()=>{let ty=null;
+ document.addEventListener("touchstart",e=>{ty=e.target.closest&&e.target.closest("#msheet")?e.touches[0].clientY:null},{passive:true});
+ document.addEventListener("touchend",e=>{if(ty==null)return;const dy=e.changedTouches[0].clientY-ty;ty=null;if(dy>60)closeMapSheet()},{passive:true})})();
