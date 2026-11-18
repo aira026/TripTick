@@ -1,0 +1,7 @@
+SUMMARY.md
+.DS_Store
+.bak-*/
+*.bak-*
+HANDOFF*.md
+NEXT_PROMPT*.md
+files.zip

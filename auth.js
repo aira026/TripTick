@@ -63,7 +63,7 @@ function setBusy(on) {
   busy = on;
   const b = $('btn-google');
   if (b) { b.classList.toggle('is-pending', on); b.setAttribute('aria-busy', on ? 'true' : 'false'); }
-  if (state !== S.ARRIVING) setLabel(on ? '登入中…' : '使用 Google 登入');
+  if (state !== S.ARRIVING) setLabel(on ? '登入中…' : '登入');
   if (!on) { clearTimeout(pendingTimer); if (state === S.PENDING) state = S.WELCOME; }
   else if (state === S.WELCOME) state = S.PENDING;
 }
