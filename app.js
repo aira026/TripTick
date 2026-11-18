@@ -54,6 +54,14 @@ function acct(t,L,r){const c=cfg(t),S=settle({members:c.members,all:[...c.member
 const T0=()=>visible().find(x=>x.status==="now");
 let cur="home";const LB={home:"首頁",more:"更多",pool:"口袋清單",now:"行程總覽",tix:"票券與預約",storm:"備忘錄",yen:"匯率與帳本",pack:"打包清單",map:"全球足跡",past:"歷史旅程",future:"未來清單"};const SUB=["now","pool","tix","storm","yen","pack"];
 const RATES={JPY:.21,KRW:.024,THB:.9,USD:32,EUR:35,CHF:36,TWD:1};
+/* patch-currency */
+const CURCOM=[["TWD","新台幣"],["JPY","日圓"],["KRW","韓元"],["USD","美元"],["EUR","歐元"],["AUD","澳幣"],["GBP","英鎊"],["CAD","加幣"],["NZD","紐幣"],["CHF","瑞士法郎"],["HKD","港幣"],["CNY","人民幣"],["SGD","新加坡幣"],["THB","泰銖"],["MYR","馬來幣"],["VND","越南盾"],["IDR","印尼盾"],["PHP","菲律賓披索"],["CZK","捷克克朗"],["SEK","瑞典克朗"],["NOK","挪威克朗"],["DKK","丹麥克朗"],["ISK","冰島克朗"],["TRY","土耳其里拉"],["ZAR","南非幣"]];
+/* 預設匯率為粗估參考（1 外幣＝多少台幣），實際請在帳本頁的匯率欄輸入，會依幣別各自記住；現有七種幣別的預設值不動 */
+Object.entries({AUD:22,GBP:43,CAD:23,NZD:19,SGD:24.8,HKD:4.1,CNY:4.7,MYR:7,VND:.0012,IDR:.0018,PHP:.55,CZK:1.5,SEK:3.5,NOK:3.2,DKK:5,ISK:.26,TRY:.72,ZAR:1.95}).forEach(([k,v])=>{if(RATES[k]==null)RATES[k]=v});
+function curFieldHTML(cur){const com=CURCOM.map(x=>x[0]);let all=[],dn=null;try{all=Intl.supportedValuesOf("currency")}catch(e){}try{dn=new Intl.DisplayNames(["zh-TW"],{type:"currency"})}catch(e){}
+ const nm=c=>{try{return dn?dn.of(c):""}catch(e){return ""}},op=(c,n)=>`<option value="${esc(c)}"${c===cur?" selected":""}>${esc(c)}${n&&n!==c?" "+esc(n):""}</option>`;
+ const other=all.filter(c=>!com.includes(c)).map(c=>op(c,nm(c))).join(""),extra=com.includes(cur)||all.includes(cur)?"":op(cur,"");
+ return`<label>幣別（記帳用）<select id="f-cur"><optgroup label="常用">${CURCOM.map(x=>op(x[0],x[1])).join("")}</optgroup>${other?`<optgroup label="其他（匯率需自行輸入）">${other}</optgroup>`:""}${extra}</select><span class="meta">改國家會自動帶入幣別，也可手動選</span></label>`}
 const curOf=()=>{const t=T0();return t?cfg(t).currency:"JPY"};
 const rate=()=>parseFloat(load("tp-rate-"+curOf()))||RATES[curOf()]||1;
 const exList=t=>[...(t.expenses||[])];
@@ -645,7 +653,7 @@ function pcExpToggle(b){const el=b.closest(".pc-item");if(el)pcToggle(el,!el.cla
 function form(st,id){const t0=TRIPS.find(x=>x.id===id),t=t0?{...t0,status:statusOf(t0)}:{status:st,spots:[]},sp=t.spots?.[0]||{};
  modal(`<h3>${id?"編輯旅程":"新增旅程"}</h3><div class="fm" data-id="${esc(id||"")}">
  <label>地點<input id="f-place" value="${esc(t.title)}" placeholder="例如：清邁" required></label>
- <label>國家<input id="f-country" list="cl" value="${esc(t.country)}" placeholder="例如：泰國" required></label>
+ <label>國家<input id="f-country" list="cl" value="${esc(t.country)}" placeholder="例如：泰國" required></label>${curFieldHTML(id?(t.currency||"JPY"):(CUR[t.country]||"TWD"))}
  <label>定位城市（選填）<input id="f-geocity" value="${esc(t.geoCity||"")}" placeholder="例如：台中（口袋名單定位用）" maxlength="20"></label><datalist id="cl">${Object.keys(FL).map(k=>`<option value="${k}">`).join("")}</datalist>
  <div class="two"><label>出發日<input id="f-s" type="date" value="${esc(t.startDate)}"></label><label>回程日<input id="f-e" type="date" value="${esc(t.endDate)}"></label></div>
  <label>類型<select id="f-st"><option value="now" ${t.status==="now"?"selected":""}>當前旅程</option><option value="past" ${t.status==="past"?"selected":""}>歷史旅程</option><option value="future" ${t.status==="future"?"selected":""}>未來清單</option></select></label>
@@ -656,7 +664,7 @@ function form(st,id){const t0=TRIPS.find(x=>x.id===id),t=t0?{...t0,status:status
  <details><summary>進階：座標（留空會自動查詢）</summary><div class="two"><label>緯度<input id="f-lat" type="number" step="any" value="${sp.lat??""}"></label><label>經度<input id="f-lng" type="number" step="any" value="${sp.lng??""}"></label></div></details>
  <div class="pills"><button class="pill" data-a="save">儲存</button></div></div>`)}
 async function geo(q){const one=async s=>{try{const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(s));const j=await r.json();return j[0]?[+j[0].lat,+j[0].lon]:null}catch(e){return null}};const base=String(q),mm=base.match(/[（(]([^）)]*)[）)]/),v=[],add=s=>{s=String(s||"").replace(/\s+/g," ").trim();if(s&&!v.includes(s))v.push(s)};add(base);if(mm){add(base.replace(mm[0]," "));add(mm[1]+" "+base.slice(mm.index+mm[0].length))}[...v].forEach(s=>add(s.replace(/台/g,"臺")));const tries=v.slice(0,5);for(let i=0;i<tries.length;i++){const g=await one(tries[i]);if(g)return g;if(i<tries.length-1)await new Promise(r=>setTimeout(r,1100))}return null}
-const CUR={日本:"JPY",台灣:"TWD",韓國:"KRW",泰國:"THB",美國:"USD",瑞士:"CHF",法國:"EUR",德國:"EUR",義大利:"EUR",西班牙:"EUR",荷蘭:"EUR",奧地利:"EUR",希臘:"EUR",芬蘭:"EUR"};
+const CUR={日本:"JPY",台灣:"TWD",韓國:"KRW",南韓:"KRW",泰國:"THB",美國:"USD",瑞士:"CHF",法國:"EUR",德國:"EUR",義大利:"EUR",西班牙:"EUR",荷蘭:"EUR",奧地利:"EUR",希臘:"EUR",芬蘭:"EUR",葡萄牙:"EUR",比利時:"EUR",愛爾蘭:"EUR",克羅埃西亞:"EUR",歐洲:"EUR",越南:"VND",新加坡:"SGD",馬來西亞:"MYR",香港:"HKD",中國:"CNY",加拿大:"CAD",英國:"GBP",冰島:"ISK",澳洲:"AUD",紐西蘭:"NZD",印尼:"IDR",菲律賓:"PHP",捷克:"CZK",土耳其:"TRY",挪威:"NOK",瑞典:"SEK",丹麥:"DKK"};
 const archiveNow=ex=>Promise.all(visible().filter(x=>x.status==="now"&&x.id!==ex).map(x=>setSt(x,"past")));
 async function saveForm(){if(!me)return toast("請先登入");
  const v=i=>$("#f-"+i).value.trim(),id=document.querySelector(".fm").dataset.id,place=v("place"),country=v("country");
@@ -666,9 +674,10 @@ async function saveForm(){if(!me)return toast("請先登入");
  if(!isNaN(lat)&&!isNaN(lng)){if(spots.length&&spots[0].lat===lat&&spots[0].lng===lng){}else if(spots.length)spots[0]={...spots[0],lat,lng};else spots.push({name:place,lat,lng,day:1})}
  else if(!spots.length){toast("查詢座標中…");const g=await geo(place+", "+country);if(g)spots.push({name:place,lat:g[0],lng:g[1],day:1});else toast("找不到座標，可稍後編輯")}
  const s=v("e")&&v("s")?v("s"):v("s"),e=v("e"),nDays=s&&e?Math.max(1,Math.round((new Date(e)-new Date(s))/864e5)+1):(old?.nDays||1);
- const base={title:place,country,geoCity:v("geocity").slice(0,20),countryCode:FL[country]||"",startDate:s,endDate:e,image:v("image")||old?.image||"",notes:v("note"),nDays,spots},st=v("st"); /* 網址留空 → 保留已上傳的照片，避免被覆蓋成空白 */
+ const base={title:place,country,geoCity:v("geocity").slice(0,20),currency:v("cur")||old?.currency||CUR[country]||"TWD",countryCode:FL[country]||"",startDate:s,endDate:e,image:v("image")||old?.image||"",notes:v("note"),nDays,spots},st=v("st"); /* 網址留空 → 保留已上傳的照片，避免被覆蓋成空白 */
+ if(old&&(old.expenses||[]).length&&(old.currency||"JPY")!==base.currency&&!confirm("這趟行程已有 "+old.expenses.length+" 筆花費。改幣別不會換算舊金額，數字會直接當成新幣別。確定要改嗎？"))return;
  try{if(old){await patch(old,base);if(st==="now")await archiveNow(old.id);await setSt(old,st)}
- else{if(st==="now")await archiveNow("");const ref=doc(collection(db,"trips"));await setDoc(ref,{...clean({...base,days:[],booking:[],expenses:[],currency:CUR[country]||"TWD",diets:{},ext:EXT0,owner:me.uid,members:[me.uid],memberNames:{[me.uid]:me.displayName||"我"},st:{[me.uid]:st}}),createdAt:serverTimestamp()})}
+ else{if(st==="now")await archiveNow("");const ref=doc(collection(db,"trips"));await setDoc(ref,{...clean({...base,days:[],booking:[],expenses:[],diets:{},ext:EXT0,owner:me.uid,members:[me.uid],memberNames:{[me.uid]:me.displayName||"我"},st:{[me.uid]:st}}),createdAt:serverTimestamp()})}
  /* 排列順序：編輯彈窗的數字欄位（僅歷史旅程），寫入 localStorage 並立即重排 */
  const posEl=$("#f-pos");if(old&&posEl&&st==="past"){const p=parseInt(posEl.value,10);if(!isNaN(p)&&p>0){setPastPos(old.id,p);render()}}
  $("#modal").classList.remove("on");toast("已儲存");if(cur==="home"&&!old)go("now")}catch(err){toast("儲存失敗："+(err.code||err.message))}}
@@ -1641,3 +1650,6 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b
 (()=>{let ty=null;
  document.addEventListener("touchstart",e=>{ty=e.target.closest&&e.target.closest("#msheet")?e.touches[0].clientY:null},{passive:true});
  document.addEventListener("touchend",e=>{if(ty==null)return;const dy=e.changedTouches[0].clientY-ty;ty=null;if(dy>60)closeMapSheet()},{passive:true})})();
+
+/* patch-currency-sync：編輯旅程改「國家」時，自動帶入對應幣別（查不到就不動，仍可手動選） */
+document.addEventListener("input",e=>{const el=e.target;if(!el||el.id!=="f-country")return;const c=CUR[el.value.trim()],s=document.getElementById("f-cur");if(c&&s&&[...s.options].some(o=>o.value===c))s.value=c});
