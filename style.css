@@ -1018,3 +1018,7 @@ body[data-pg="home"] .top>div{visibility:hidden}
 .fm input[type=date]::-webkit-date-and-time-value{text-align:left}
 .codebox .pill{background:#22302A;color:#fff;border:0;box-shadow:none}
 /* end patch-date-copy */
+
+/* patch-member-count */
+.sheet h3 .mcount{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 8px;margin-left:10px;border-radius:999px;background:rgba(255,255,255,.14);color:var(--text-2);font:600 13px/1 system-ui,-apple-system,"Noto Sans TC",sans-serif;vertical-align:middle}
+/* end patch-member-count */
