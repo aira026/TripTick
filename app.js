@@ -811,7 +811,7 @@ function renderDrawer(){const t=T0(),nm=t?(t.short||t.title):"",b=(id,c)=>`<butt
  $("#crumb").textContent=(SUB.includes(cur)?`${t?nm:"當前旅程"} › ${LB[cur]}`:LB[cur])}
 
 /* ===== 行程內底部導覽（5 格）===== */
-const BN_PAGES=["home","now","tix","storm","yen","pack","pool","more"];
+const BN_PAGES=["now","tix","storm","yen","pack","pool","more"];
 const BN_GROUP={tix:"more",storm:"more",yen:"more",pack:"more",pool:"more"};
 function updateBnav(){
   document.body.classList.toggle("has-bnav",BN_PAGES.includes(cur));
