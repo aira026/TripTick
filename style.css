@@ -1010,3 +1010,11 @@ body[data-pg="home"] .top>div{visibility:hidden}
 
 /* ===== 新增鈕的「＋」：原本淺綠加號在淺色玻璃上太淡，改成小深色圓底＋白色加號（只動 .dot；--accent 全域不動） ===== */
 .dot{background:rgba(30,43,36,.62);color:#fff;font-weight:700}
+
+/* patch-date-copy */
+.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.two>label{min-width:0}
+.fm input[type=date]{min-width:0;max-width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;text-align:left}
+.fm input[type=date]::-webkit-date-and-time-value{text-align:left}
+.codebox .pill{background:#22302A;color:#fff;border:0;box-shadow:none}
+/* end patch-date-copy */
