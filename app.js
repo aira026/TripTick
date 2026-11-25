@@ -574,6 +574,11 @@ function pcMeta(t){const dateTxt=`${t.startDate||"日期未定"}${t.endDate?" �
  return{dateTxt,mateTxt:mates.length?mates.join("、"):"自行出發"}}
 /* 城市：一趟出國可能去多個城市，取每日行程 city 去重串接 */
 function pcCities(t){const set=[];getDays(t).forEach(d=>{const c=(d.city||"").trim();if(c&&!set.includes(c))set.push(c)});return set.join("、")}
+function pcCitiesHTML(t,cities){if(!cities)return"";
+const n=cities.split("、").length;
+if(n<4)return`<span class="pc-cities" title="${esc(cities)}">${esc(cities)}</span>`;
+const id="pcc-"+esc(t.id);
+return`<div class="pc-cities pc-cities-fold"><input type="checkbox" class="pcc-chk" id="${id}"><span class="pcc-txt" title="${esc(cities)}">${esc(cities)}</span><label class="pcc-tg" for="${id}"></label></div>`}
 function pcard(t){const{dateTxt,mateTxt}=pcMeta(t),cities=pcCities(t),img=t.image||photoOf(t.id)||"";
  return`<article class="pc-item" data-pid="${esc(t.id)}">
   <div class="pc-photo">${img?`<img src="${esc(img)}" alt="${esc(t.title)} 照片" loading="lazy" onerror="this.style.display='none'">`:""}<div class="pc-shade"></div></div>
@@ -583,7 +588,7 @@ function pcard(t){const{dateTxt,mateTxt}=pcMeta(t),cities=pcCities(t),img=t.imag
     <p class="pc-title">${esc(t.title)}</p>
     <h3 class="pc-country">${esc(t.country)||"未知國家"}</h3>
     <p class="pc-meta">${flagOf(t)} ${esc(dateTxt)}<br>${nd(t)} 天<br>旅客：${esc(mateTxt)}</p>
-    <div class="pc-note-row"><div class="pc-note"><em>心情札記</em><p>${t.notes?esc(t.notes):"還沒有寫下這趟旅程的心情札記…"}</p></div>${cities?`<span class="pc-cities" title="${esc(cities)}">${esc(cities)}</span>`:""}</div>
+    <div class="pc-note-row"><div class="pc-note"><em>心情札記</em><p>${t.notes?esc(t.notes):"還沒有寫下這趟旅程的心情札記…"}</p></div>${pcCitiesHTML(t,cities)}</div>
    </div>
 <div class="pills pc-act">${me ? `<button class="pill" data-a="edit" data-v="${esc(t.id)}"><i class=i-edit></i> 編輯</button>` : ""}${t.status==="past"?`<button class="pill gl" data-a="setcur" data-v="${esc(t.id)}">設為當前行程</button>`:""}${t.status==="past"?`<button class="pill gl story-share" data-a="ss-open" data-v="${esc(t.id)}" aria-label="產生這趟旅程的 IG 限時動態分享圖"><svg viewBox="0 0 24 24" width="19" height="19" fill="none"stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg></button>`:""}${t.owner===me?.uid?`<button class="pill gl" data-a="del" data-v="${esc(t.id)}"><svg class="ix" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg> 刪除</button>`:""}</div>
   </div>
