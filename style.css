@@ -1022,3 +1022,12 @@ body[data-pg="home"] .top>div{visibility:hidden}
 /* patch-member-count */
 .sheet h3 .mcount{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 8px;margin-left:10px;border-radius:999px;background:rgba(255,255,255,.14);color:var(--text-2);font:600 13px/1 system-ui,-apple-system,"Noto Sans TC",sans-serif;vertical-align:middle}
 /* end patch-member-count */
+
+/* patch-memo-newline */
+.me-text{white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* patch-memo-icons */
+.me-entry{align-items:flex-start}
+.me-entry .mb{align-items:flex-start;align-self:flex-start}
+.me-entry .mb .x{height:44px;min-height:44px;color:#fff}
+.me-entry .mb .i-edit{background:#fff}
