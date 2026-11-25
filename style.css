@@ -1043,3 +1043,12 @@ body[data-pg="home"] .top>div{visibility:hidden}
 .pt-row .pt-ed{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center}
 body:not(.editing) .pt-row .pt-ed{display:none}
 body.editing .pt-row .pt-ed .x{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;margin:0}
+
+/* patch-pool-miss */
+.pt-miss{position:relative;margin:8px 4px 0}
+.pt-miss summary{list-style:none;cursor:pointer;display:flex;align-items:center;min-height:44px;padding-right:112px;font-size:13px;color:var(--text-2)}
+.pt-miss summary::-webkit-details-marker{display:none}
+.pt-miss summary::after{content:"\25BE";margin-left:8px}
+.pt-miss details[open] summary::after{content:"\25B4"}
+.pt-miss p{margin:0 0 8px;font-size:13px;line-height:1.6;color:var(--text-2)}
+.pt-miss>.pill{position:absolute;top:0;right:0;min-height:44px;margin:0}

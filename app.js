@@ -1599,8 +1599,8 @@ reset(){if(!this.m)return;this.tok++;this.m.closePopup();this.sel=null;this.hl(n
 refresh(){setTimeout(()=>{try{if(!this.m)return;this.m.invalidateSize();if(this.ll.length)this.m.fitBounds(this.ll,{padding:[30,30],maxZoom:14})}catch(e){}},80)}};
 let poolMapOpen=true;
 function poolMapHTML(t){const ms=poolOf(t).filter(p=>p&&p.lat==null),miss=ms.length;
- const tg=`<div class="pills" style="margin:0 0 8px"><button class="pill gl mini" data-a="poolmaptoggle">${poolMapOpen?"收合地圖":"顯示地圖"}</button></div>`,note=(poolMapOpen?"空心圓表示尚未排入行程，實心圓表示已排入行程。":"")+(miss?`有 ${miss} 個地點沒標到地圖：${esc(ms.slice(0,8).map(p=>p.name).join("、"))}。<button class="pill mini" data-a="poolgeo">重新查詢</button>`:"");
- return tg+(poolMapOpen?`<div class="glass mapbox"><div id="poolmap" class="nowmap" role="application" aria-label="口袋名單地圖"></div></div>`:"")+(note?`<p class="meta" style="margin:8px 4px 0">${note}</p>`:"")}
+ const tg=`<div class="pills" style="margin:0 0 8px"><button class="pill gl mini" data-a="poolmaptoggle">${poolMapOpen?"收合地圖":"顯示地圖"}</button></div>`,note=(poolMapOpen||miss)?`<div class="pt-miss"><details><summary>${miss?`${miss} 個地點不在上方地圖上`:"圖例"}</summary>${miss?`<p>${esc(ms.slice(0,8).map(p=>p.name).join("、"))}${miss>8?"…":""}。仍可用各列的「地圖」鈕導航。</p>`:""}${poolMapOpen?`<p>空心圓：尚未排入行程。實心圓：已排入行程。</p>`:""}</details>${miss?`<button class="pill mini" data-a="poolgeo">重新查詢</button>`:""}</div>`:"";
+ return tg+(poolMapOpen?`<div class="glass mapbox"><div id="poolmap" class="nowmap" role="application" aria-label="口袋名單地圖"></div></div>`:"")+note}
 function dailyMissingHTML(t){const m=[];getDays(t).forEach(d=>(d.items||[]).forEach(x=>{if(x&&x.q&&x.lat==null)m.push(x.h||x.q)}));
  if(!m.length)return"";
  return`<p class="meta" style="margin:8px 4px 0">有 ${m.length} 個景點沒標到地圖：${esc(m.slice(0,8).join("、"))}${m.length>8?"…":""}。「地點」改成「店名 城市」較容易找到。<button class="pill mini" data-a="georetry">重新查詢</button></p>`}
