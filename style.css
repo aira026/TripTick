@@ -1031,3 +1031,8 @@ body[data-pg="home"] .top>div{visibility:hidden}
 .me-entry .mb{align-items:flex-start;align-self:flex-start}
 .me-entry .mb .x{height:44px;min-height:44px;color:#fff}
 .me-entry .mb .i-edit{background:#fff}
+
+/* patch-pool-btn */
+.pt-row .pt-main{flex:1 1 auto;min-width:0}
+.pt-row .pt-act{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center;align-items:stretch}
+.pt-row .pt-act .cb{display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:72px;min-height:44px;margin:0;padding:0 16px;white-space:nowrap}
