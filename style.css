@@ -1036,3 +1036,10 @@ body[data-pg="home"] .top>div{visibility:hidden}
 .pt-row .pt-main{flex:1 1 auto;min-width:0}
 .pt-row .pt-act{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center;align-items:stretch}
 .pt-row .pt-act .cb{display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:72px;min-height:44px;margin:0;padding:0 16px;white-space:nowrap}
+
+/* patch-edit-icons */
+.it .act .cb,.mb .x,.pt-row .x{color:#fff}
+.act .i-edit,.mb .i-edit,.pt-row .i-edit{background:#fff}
+.pt-row .pt-ed{display:flex;flex-direction:column;gap:8px;flex:none;align-self:center}
+body:not(.editing) .pt-row .pt-ed{display:none}
+body.editing .pt-row .pt-ed .x{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;margin:0}
