@@ -1066,3 +1066,9 @@ body.editing .pt-row .pt-ed .x{display:flex;align-items:center;justify-content:c
 .pc-cities-fold .pcc-chk:checked ~ .pcc-txt{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.6}
 .pc-cities-fold .pcc-chk:checked ~ .pcc-tg{align-self:flex-start}
 .pc-cities-fold .pcc-chk:checked ~ .pcc-tg::after{content:"收合 ▴"}
+
+/* patch-edit-btn */
+.pill.mini.edt{min-height:44px;padding:0 16px;font-size:13px;font-weight:600;background:rgba(255,255,255,.72);color:#3A2E26;border:1px solid rgba(58,46,38,.2);box-shadow:none}
+.pill.mini.edt .i-edit{background:#3A2E26}
+.pill.mini.edt.on{background:#fff;color:#3A2E26;border-color:rgba(58,46,38,.28)}
+.pill.mini.edt.on .i-edit{background:#FF7A00}
